@@ -197,6 +197,91 @@ def find_F_E_R_t(kp1, kp2, matches):
     return F, E, R, t, pts1_F, pts2_F, pts1_E, pts2_E
 
 
+def pixel2cam(pt, K):
+    """
+    :param pt: point position in pixel coordinate
+    :param K:
+    :return: point position in camera coordinate
+    """
+    """
+    return Point2f
+    (
+        (p.x - K.at < double > (0, 2)) / K.at < double > (0, 0),
+        (p.y - K.at < double > (1, 2)) / K.at < double > (1, 1)
+    );
+    """
+    return np.array([ (pt[0]-K[0,2])/K[0,0],  (pt[1]-K[1,2])/K[1,1] ])
+
+
+
+def triangulation(R, t, pts1, pts2, K):
+    """
+    https://pythonpath.wordpress.com/2012/08/29/cv2-triangulatepoints/
+    :param R:
+    :param t:
+    :param pts1:
+    :param pts2:
+    :param K:
+    :return: pts3xN
+    """
+
+    """ triangulatePoints(projMatr1, projMatr2, projPoints1, projPoints2[, points4D]) -> points4D """
+
+    projM1 = np.eye(4)
+
+    projM2 = np.eye(4)
+
+    print("R.type:{}, R.shape:{}".format(type(R), R.shape))
+    print("t.type:{}, t.shape:{}".format(type(t), t.shape))
+    projM2[:3, :3] = R
+    projM2[:3, -1] = t.T
+
+    assert len(pts1) == len(pts2)
+    pts1_cam_Nx2 = np.array([pixel2cam(x, K) for x in pts1])
+    pts2_cam_Nx2 = np.array([pixel2cam(x, K) for x in pts2])
+
+    pts4d = cv2.triangulatePoints(projM1[:3], projM2[:3], pts1_cam_Nx2.T, pts2_cam_Nx2.T)
+
+    # 转换成非齐次坐标
+    pts1_cam_3xN = pts4d[:3] / pts4d[-1]
+
+
+    if DEBUG:
+
+        # 验证三角化点与特征点的重投影关系
+        pts1_cam_3xN_norm = pts1_cam_3xN / pts1_cam_3xN[-1] # normalization
+
+        print("Points in first camera frame:\n{}".format(pts1_cam_Nx2))
+        print("Point projected from 3D:\n{}".format(pts1_cam_3xN_norm.T))
+
+        # -second
+        #pts2_trans_3xN = np.array([R.dot(x)+t for x in pts3xN.T])
+        pts2_trans_3xN = R.dot(pts1_cam_3xN) + t
+        pts2_trans_3xN_norm = pts2_trans_3xN/pts2_trans_3xN[-1]
+
+        print("Points in second camera frame:\n{}".format(pts2_cam_Nx2))
+        print("Point reprojected from second frame:\n{}".format(pts2_trans_3xN_norm.T))
+
+    pts1_cam_Nx3 = pts1_cam_3xN.T
+    return pts1_cam_Nx3
+
+
+def PNPSolver_img2_points_and_3DPoints(pts1_cam_Nx3, pts2_pixel_Nx2, K):
+
+    assert len(pts1_cam_Nx3) == len(pts2_pixel_Nx2)
+
+    print("In PNPSolver points num:{}".format(len(pts1_cam_Nx3)))
+
+    """solvePnP(objectPoints, imagePoints, cameraMatrix, distCoeffs[, rvec[, tvec[, useExtrinsicGuess[, flags]]]]) -> retval, rvec, tvec"""
+    _, r, t = cv2.solvePnP(pts1_cam_Nx3, pts2_pixel_Nx2, K, None, useExtrinsicGuess=False)
+
+    print("R t from solvePnP")
+    R, _ = cv2.Rodrigues(r)
+    print("R:\n{}".format(R))
+    print("r:\n{}".format(r))
+    print("t:\n{}".format(t))
+
+    return R, t
 
 def drawlines(img1,img2,lines,pts1,pts2):
     ''' img1 - image on which we draw the epilines for the points in img2
@@ -241,7 +326,7 @@ if __name__ == '__main__':
     im1_file = base_dir+'1.png'
     im2_file = base_dir + '2.png'
 
-    DEBUG = True
+    DEBUG = False
 
     if DEBUG:
         print("HHHHH")
@@ -260,7 +345,17 @@ if __name__ == '__main__':
 
     draw_epilines_from_F(im1, im2, pts1_F, pts2_F, F)
 
+    K = np.array([[520.9, 0, 325.1], [0, 521.0, 249.7], [0, 0, 1]])
 
+    pts1_cam_Nx3 = triangulation(R, t, pts1_E, pts2_E, K)
+
+
+    # prune out some points and re-calc the R, t from the 3d points
+    pts1_cam_Nx3_half = pts1_cam_Nx3[:len(pts1_cam_Nx3)//2]
+    pts2_E_half = pts2_E[:len(pts2_E)//2]
+
+    PNPSolver_img2_points_and_3DPoints(pts1_cam_Nx3, pts2_E, K)
+    PNPSolver_img2_points_and_3DPoints(pts1_cam_Nx3_half, pts2_E_half, K)
 
 """
 SOME NOTES:
@@ -296,5 +391,12 @@ SOME NOTES:
     The cheirality check basically means that the triangulated 3D points should have positive depth. Some details can be found in [119] .
     
 7. check_solutions(fp, sp, K, R1, R2, t):
-    should have same result as recoverPose, but without good luck            
+    should have same result as recoverPose, but without good luck    
+    
+8. some note online
+    * [import cv2 #Notes](https://pythonpath.wordpress.com/import-cv2/)
+    
+9. The usage of 3xN and Nx3
+
+10. findFundamentalMat, findEssentialMat all have `mask` return value and means `inner points`, we should take care of them
 """
