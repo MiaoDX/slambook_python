@@ -126,6 +126,23 @@ def find_F_E_R_t(kp1, kp2, matches):
     print("F:\n{}".format(F))
 
 
+    # [ref](https://github.com/kevin-george/cv_tools/blob/master/calculate_fmatrix.py#L195)
+    # Pick a random match, homogenize it and check if Fundamental
+    # matrix calculated is good enough x' * F * x = 0
+    import random
+    import sys
+    index = random.randint(0, len(pts1))
+    pt1 = np.array([[pts1[index][0], pts1[index][1], 1]])
+    pt2 = np.array([[pts2[index][0], pts2[index][1], 1]])
+    error = np.dot(pt1, np.dot(F, pt2.T))
+    if error >= 1:
+        print("Fundamental matrix calculation Failed! " + str(error))
+        # sys.exit()
+        input("Press Enter to continue ...")
+
+
+
+
     K = np.array([[520.9, 0, 325.1], [0, 521.0, 249.7], [0, 0, 1]])
 
 
@@ -225,8 +242,6 @@ def triangulation(R, t, pts1, pts2, K):
     :return: pts3xN
     """
 
-    """ triangulatePoints(projMatr1, projMatr2, projPoints1, projPoints2[, points4D]) -> points4D """
-
     projM1 = np.eye(4)
 
     projM2 = np.eye(4)
@@ -240,6 +255,7 @@ def triangulation(R, t, pts1, pts2, K):
     pts1_cam_Nx2 = np.array([pixel2cam(x, K) for x in pts1])
     pts2_cam_Nx2 = np.array([pixel2cam(x, K) for x in pts2])
 
+    """ triangulatePoints(projMatr1, projMatr2, projPoints1, projPoints2[, points4D]) -> points4D """
     pts4d = cv2.triangulatePoints(projM1[:3], projM2[:3], pts1_cam_Nx2.T, pts2_cam_Nx2.T)
 
     # 转换成非齐次坐标
