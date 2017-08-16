@@ -46,9 +46,10 @@ def find_keypoints_and_description(img):
         print("des1:{},des2:{},equal{}\n".format(d1, d2, d1==d2))
     """
 
-    # draw only keypoints location,not size and orientation
-    # img2 = cv2.drawKeypoints(img, kp, None, color=(0, 255, 0), flags=0)
-    # plt.imshow(img2),plt.show()
+    if DEBUG:
+        # draw only keypoints location,not size and orientation
+        img2 = cv2.drawKeypoints(img, kp, None, color=(0, 255, 0), flags=0)
+        plt.imshow(img2),plt.show()
     return kpp, des
 
 
@@ -74,8 +75,8 @@ def find_feature_matches_from_keypoints_and_descriptors(img1, kp1, des1, img2, k
 
     print("We found {} pairs of points in total".format(len(matches)))
 
-    #img3 = cv2.drawMatches(img1, kp1, img2, kp2, matches, None, flags=2)
-    #plt.imshow(img3), plt.show()
+    img3 = cv2.drawMatches(img1, kp1, img2, kp2, matches, None, flags=2)
+    plt.imshow(img3), plt.show()
 
 
 
@@ -88,7 +89,7 @@ def essentialFromFundamental(F, K1, K2):
     """
     return K2.T.dot(F).dot(K1)
 
-def find_F_E_R_t(kp1, kp2, matches):
+def find_F_E_R_t(kp1, kp2, matches, K):
     """
     [ref](https://opencv-python-tutroals.readthedocs.io/en/latest/py_tutorials/py_calib3d/py_epipolar_geometry/py_epipolar_geometry.html)
     :param kp1:
@@ -141,11 +142,6 @@ def find_F_E_R_t(kp1, kp2, matches):
         input("Press Enter to continue ...")
 
 
-
-
-    K = np.array([[520.9, 0, 325.1], [0, 521.0, 249.7], [0, 0, 1]])
-
-
     E, mask_E = cv2.findEssentialMat(pts1, pts2, cameraMatrix=K)
     # We select only inlier points
     pts1_E = pts1[mask_E.ravel() == 1]
@@ -168,6 +164,8 @@ def find_F_E_R_t(kp1, kp2, matches):
     R_checked, t_checked = utils.check_solutions(pts1_E, pts2_E, K, RE1, RE2, tE)
     print("R t from decomposeEssentialMat and checked")
     print("R_checked:{}".format(R_checked))
+    r_checked, _ = cv2.Rodrigues(R_checked)
+    print("r_checked:\n{}".format(r_checked))
     print("t_checked:{}".format(t_checked))
 
     E_FF = essentialFromFundamental(F, K, K) # it should be the same, however, it is not :(
@@ -193,9 +191,21 @@ def find_F_E_R_t(kp1, kp2, matches):
     print("H:\n{}".format(H))
 
     _, RH, tH, _ = cv2.decomposeHomographyMat(H, K) # it will have four answers, we need to find which is better
-    print("R t from decomposeHomographyMat")
+    print("R t from decomposeHomographyMat, there can be up many R")
     print("RH:{}".format(RH))
+    for RHi in RH:
+        rH, _ = cv2.Rodrigues(RHi)
+        print("rH:{}".format(rH))
     print("tH:{}".format(tH))
+
+    assert len(RH) == 4
+    RH_checked, th_checked = utils.check_solutions(pts1_H, pts2_H, K, RH[0], RH[3], tH[0])
+    print("R t from decomposeHomographyMat and checked")
+    print("RH_checked:{}".format(RH_checked))
+    rH_checked, _ = cv2.Rodrigues(RH_checked)
+    print("rH_checked:\n{}".format(rH_checked))
+    print("tH_checked:{}".format(th_checked))
+
 
 
     _, R, t, mask_rc = cv2.recoverPose(E, pts1, pts2, K) # this can have the determiate results, so we choose it
@@ -338,15 +348,32 @@ def draw_epilines_from_F(img1, img2, pts1, pts2, F):
     plt.show()
 
 if __name__ == '__main__':
-    base_dir = 'H:/projects/SLAM/slambook/ch7/'
-    im1_file = base_dir+'1.png'
-    im2_file = base_dir + '2.png'
+    # base_dir = 'H:/projects/SLAM/slambook/ch7/'
+    # base_dir = "H:/projects/SLAM/python_code/dataset/RGBD_BENCHMARK/rgbd_dataset_freiburg2_xyz_chosen/simple/"
+    # im1_file = base_dir+'1.png'
+    # im2_file = base_dir + '2.png'
+
+
+    # base_dir = "H:/projects/SLAM/python_code/dataset/our/trajs/"
+    # im1_file = base_dir+'0_b.jpg'
+    # im2_file = base_dir + '1_b.jpg'
+    base_dir = "H:/projects/SLAM/python_code/dataset/our/trajs2/"
+    base_dir2 = "H:/projects/SLAM/python_code/dataset/our/trajs_bright/"
+    base_dir3 = "H:/projects/SLAM/python_code/dataset/our/trajs_r/"
+
+    im1_file = base_dir + '1.jpg'
+    # im2_file = base_dir + '3.jpg'
+    # im2_file = base_dir2 + '1.jpg'
+    im2_file = base_dir + '2.jpg'
 
     DEBUG = False
 
     if DEBUG:
         print("HHHHH")
 
+
+    # im1 = cv2.imread(im1_file, 0)
+    # im2 = cv2.imread(im2_file, 0)
 
     im1 = cv2.imread(im1_file)
     im2 = cv2.imread(im2_file)
@@ -357,21 +384,22 @@ if __name__ == '__main__':
 
     matches = find_feature_matches_from_keypoints_and_descriptors(im1, kp1, des1, im2, kp2, des2)
 
-    F, E, R, t, pts1_F, pts2_F, pts1_E, pts2_E = find_F_E_R_t(kp1, kp2, matches)
+    # K = np.array([[520.9, 0, 325.1], [0, 521.0, 249.7], [0, 0, 1]])
+    # K = np.array([[525.0, 0, 319.5], [0, 525.0, 239.5], [0, 0, 1]])
+    K = np.array([[8607.8639, 0, 2880.72115], [0, 8605.4303, 1913.87935], [0, 0, 1]]) # Canon5DMarkIII-EF50mm
+
+    F, E, R, t, pts1_F, pts2_F, pts1_E, pts2_E = find_F_E_R_t(kp1, kp2, matches, K)
 
     draw_epilines_from_F(im1, im2, pts1_F, pts2_F, F)
 
-    K = np.array([[520.9, 0, 325.1], [0, 521.0, 249.7], [0, 0, 1]])
-
     pts1_cam_Nx3 = triangulation(R, t, pts1_E, pts2_E, K)
-
 
     # prune out some points and re-calc the R, t from the 3d points
     pts1_cam_Nx3_half = pts1_cam_Nx3[:len(pts1_cam_Nx3)//2]
     pts2_E_half = pts2_E[:len(pts2_E)//2]
 
-    PNPSolver_img2_points_and_3DPoints(pts1_cam_Nx3, pts2_E, K)
-    PNPSolver_img2_points_and_3DPoints(pts1_cam_Nx3_half, pts2_E_half, K)
+    # PNPSolver_img2_points_and_3DPoints(pts1_cam_Nx3, pts2_E, K)
+    # PNPSolver_img2_points_and_3DPoints(pts1_cam_Nx3_half, pts2_E_half, K)
 
 """
 SOME NOTES:
@@ -415,4 +443,6 @@ SOME NOTES:
 9. The usage of 3xN and Nx3
 
 10. findFundamentalMat, findEssentialMat all have `mask` return value and means `inner points`, we should take care of them
+
+11. [相机位姿求解问题？](https://www.zhihu.com/collection/128407057)
 """
