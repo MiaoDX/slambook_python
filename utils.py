@@ -92,3 +92,23 @@ def check_solutions(fp, sp, K, R1, R2, t):
         return R2, -t
 
     return None
+
+
+def rotate_angle(R):
+    """
+    http://www.cnblogs.com/singlex/p/RotateMatrix2Euler.html
+    :param R:
+    :return: thetaz, thetay, thetax
+    """
+    r11 = R[0][0]
+    r21 = R[1][0]
+    r31 = R[2][0]
+    r32 = R[2][1]
+    r33 = R[2][2]
+
+    from math import pi, atan2, sqrt
+    z = atan2(r21, r11)/pi*180
+    y = atan2(-r31, sqrt(r32*r32 + r33*r33))/pi*180
+    x = atan2(r32, r33)/pi*180
+
+    print("rotate_angle:\nz:{}\ny:{}\nx:{}".format(z, y, x))

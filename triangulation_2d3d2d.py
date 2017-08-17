@@ -12,6 +12,9 @@ import cv2
 from matplotlib import pyplot as plt
 import numpy as np
 
+from utils import rotate_angle
+
+
 def find_keypoints_and_description(img):
     # Initiate STAR detector
     orb = cv2.ORB_create()
@@ -218,6 +221,7 @@ def find_F_E_R_t(kp1, kp2, matches, K):
     r, _ = cv2.Rodrigues(R)
     print("R:\n{}".format(R))
     print("r:\n{}".format(r))
+    rotate_angle(R)
     print("t:\n{}".format(t))
 
     # find_F_E_R_t
@@ -226,6 +230,8 @@ def find_F_E_R_t(kp1, kp2, matches, K):
 
 def pixel2cam(pt, K):
     """
+    // 像素坐标转相机归一化坐标
+    [1、像素坐标与像平面坐标系之间的关系 ](http://blog.csdn.net/waeceo/article/details/50580607)
     :param pt: point position in pixel coordinate
     :param K:
     :return: point position in camera coordinate
@@ -364,7 +370,7 @@ if __name__ == '__main__':
     im1_file = base_dir + '1.jpg'
     # im2_file = base_dir + '3.jpg'
     # im2_file = base_dir2 + '1.jpg'
-    im2_file = base_dir + '2.jpg'
+    im2_file = base_dir + '7a.jpg'
 
     DEBUG = False
 
@@ -392,7 +398,40 @@ if __name__ == '__main__':
 
     draw_epilines_from_F(im1, im2, pts1_F, pts2_F, F)
 
+    #t = t/(t[0]/-40.0) #1-4
+    #t = t / (t[-1] / -15.0) #1-2
+    t = t/(t[0]/40.0) #1-7 # it will be totally wrong if we are using 7a
+    print("Scaled t:{}".format(t))
     pts1_cam_Nx3 = triangulation(R, t, pts1_E, pts2_E, K)
+    for i in range(10):
+       print(pts1_cam_Nx3[i])
+
+    import pylab
+    pylab.hist(pts1_cam_Nx3[:,-1], bins=10)
+    pylab.show()
+
+
+    # just do it, without all funcy and forward and backward calculation
+    R = np.eye(3)
+
+    #t = np.array([0.0, 0.0, -15.0])  # 1-2
+    #t = np.array([-40.0, 0, 0])  # 1-4
+    t = np.array([40.0, 0, 0])  # 1-7a # we can still use 7a without any problem
+
+    pts1 = []
+    pts2 = []
+    for m in matches:
+        pts2.append(kp2[m.trainIdx].pt)
+        pts1.append(kp1[m.queryIdx].pt)
+    pts1_cam_Nx3_another = triangulation(R, t, pts1, pts2, K)
+    #pts1_cam_Nx3_another = triangulation(R, t, pts1_E, pts2_E, K) # it is a liitle worse than all points, why?
+    for i in range(10):
+       print(pts1_cam_Nx3_another[i])
+
+    #pylab.hist(data, normed=1)
+    pylab.hist(pts1_cam_Nx3_another[:,-1], bins=10)
+    pylab.show()
+
 
     # prune out some points and re-calc the R, t from the 3d points
     pts1_cam_Nx3_half = pts1_cam_Nx3[:len(pts1_cam_Nx3)//2]
