@@ -14,6 +14,7 @@ import numpy as np
 
 from utils import rotate_angle
 
+DEBUG = False
 
 def find_keypoints_and_description(img):
     # Initiate STAR detector
@@ -372,7 +373,7 @@ if __name__ == '__main__':
     # im2_file = base_dir2 + '1.jpg'
     im2_file = base_dir + '7a.jpg'
 
-    DEBUG = False
+    # DEBUG = False
 
     if DEBUG:
         print("HHHHH")
@@ -484,4 +485,6 @@ SOME NOTES:
 10. findFundamentalMat, findEssentialMat all have `mask` return value and means `inner points`, we should take care of them
 
 11. [相机位姿求解问题？](https://www.zhihu.com/collection/128407057)
+
+12. The color space (RGB, BGR) and the consequences
 """

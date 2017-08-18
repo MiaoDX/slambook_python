@@ -112,3 +112,15 @@ def rotate_angle(R):
     x = atan2(r32, r33)/pi*180
 
     print("rotate_angle:\nz:{}\ny:{}\nx:{}".format(z, y, x))
+
+
+def cv2plt(im):
+    dim = len(im.shape)
+    assert dim >= 2
+
+    if dim == 2: # Gray
+        return cv2.cvtColor(im, cv2.COLOR_GRAY2RGB)
+    elif dim == 3: # BGR
+        return cv2.cvtColor(im, cv2.COLOR_BGR2RGB)
+    elif dim == 4: # BGRA
+        return cv2.cvtColor(im, cv2.COLOR_BGRA2RGBA)
