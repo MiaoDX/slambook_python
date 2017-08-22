@@ -1,5 +1,5 @@
 """
-Copy from [calculate_homography](https://github.com/kevin-george/cv_tools/blob/master/calculate_homography.py)
+Check_solutions is copied from [calculate_homography](https://github.com/kevin-george/cv_tools/blob/master/calculate_homography.py)
 
 The reference can be found at [](http://igt.ip.uca.fr/~ab/Classes/DIKU-3DCV2/Handouts/Lecture16.pdf)
 """
@@ -94,7 +94,9 @@ def check_solutions(fp, sp, K, R1, R2, t):
     return None
 
 
-def rotate_angle(R):
+
+
+def rotate_angle_no_output(R):
     """
     http://www.cnblogs.com/singlex/p/RotateMatrix2Euler.html
     :param R:
@@ -111,8 +113,12 @@ def rotate_angle(R):
     y = atan2(-r31, sqrt(r32*r32 + r33*r33))/pi*180
     x = atan2(r32, r33)/pi*180
 
-    print("rotate_angle:\nz:{}\ny:{}\nx:{}".format(z, y, x))
+    return np.array([z, y, x]).reshape(3,1) # to make it the same as t
 
+
+def rotate_angle(R):
+    z, y, x = rotate_angle_no_output(R)
+    print("rotate_angle:z:{},y:{},x:{}".format(z, y, x))
 
 def cv2plt(im):
     dim = len(im.shape)
