@@ -8,7 +8,7 @@ The first image can be treat as the left camera, the second (move x=40mm) can be
 [ref:机器视觉学习笔记（8）——基于OpenCV的Bouguet立体校正](http://blog.csdn.net/xuelabizp/article/details/50476639)
 """
 
-from triangulation_2d3d2d import *
+from pose_estimation_2d2d import *
 
 
 
@@ -85,6 +85,10 @@ def testDis2(left_map1, left_map2, right_map1, right_map2, Q, frame1 , frame2):
     print("imgL.shape:{}".format(imgL.shape))
 
     vis = np.concatenate((img1_rectified, img2_rectified), axis=1)
+
+    # draw horizontal lines every 25 px accross the side by side image
+    for i in range(20, vis.shape[0], 25):
+        cv2.line(vis, (0, i), (vis.shape[1], i), (255, 0, 0))
 
     plt.imshow(utils.cv2plt(vis)), plt.show()
 
@@ -231,6 +235,6 @@ if __name__ == '__main__':
     height, width = im1.shape[:2]
     size = (width, height)
     left_map1, left_map2, right_map1, right_map2, Q = stereoRectifyCalc(K, size, R, t)
-    testDis(left_map1, left_map2, right_map1, right_map2, Q, im1, im2)
-    #testDis2(left_map1, left_map2, right_map1, right_map2, Q, im1, im2)
+    #testDis(left_map1, left_map2, right_map1, right_map2, Q, im1, im2)
+    testDis2(left_map1, left_map2, right_map1, right_map2, Q, im1, im2)
 
