@@ -1,0 +1,94 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "slambook-python"
+version = "0.1.0"
+description = "Teaching-first Python ports of selected slambook SLAM examples."
+readme = "README.md"
+requires-python = ">=3.10"
+license = { text = "MIT" }
+authors = [
+  { name = "MiaoDX" },
+]
+keywords = ["slam", "computer-vision", "visual-odometry", "education"]
+classifiers = [
+  "Development Status :: 2 - Pre-Alpha",
+  "Intended Audience :: Education",
+  "License :: OSI Approved :: MIT License",
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3.10",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+  "Programming Language :: Python :: 3.13",
+  "Topic :: Scientific/Engineering :: Image Processing",
+]
+dependencies = []
+
+[project.optional-dependencies]
+core = [
+  "numpy>=1.24",
+  "scipy>=1.10",
+  "opencv-python>=4.8",
+  "matplotlib>=3.7",
+  "pyyaml>=6.0",
+  "tqdm>=4.66",
+]
+test = [
+  "pytest>=8.0",
+]
+3d = [
+  "open3d>=0.18",
+  "evo>=1.25",
+]
+modern = [
+  "rerun-sdk>=0.16",
+  "torch",
+  "kornia",
+  "lightglue",
+  "pycolmap",
+  "faiss-cpu",
+]
+backend = [
+  "gtsam",
+  "jax",
+  "jaxlie",
+]
+all = [
+  "numpy>=1.24",
+  "scipy>=1.10",
+  "opencv-python>=4.8",
+  "matplotlib>=3.7",
+  "pyyaml>=6.0",
+  "tqdm>=4.66",
+  "pytest>=8.0",
+  "open3d>=0.18",
+  "evo>=1.25",
+  "rerun-sdk>=0.16",
+  "torch",
+  "kornia",
+  "lightglue",
+  "pycolmap",
+  "faiss-cpu",
+  "gtsam",
+  "jax",
+  "jaxlie",
+]
+
+[project.urls]
+Homepage = "https://github.com/MiaoDX/slambook_python"
+Source = "https://github.com/MiaoDX/slambook_python"
+
+[tool.setuptools.packages.find]
+include = ["slam*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-ra"
+markers = [
+  "open3d: tests that require Open3D",
+  "gtsam: tests that require GTSAM",
+  "pycolmap: tests that require PyCOLMAP",
+  "modern: tests that require optional modern matching or logging dependencies",
+]
