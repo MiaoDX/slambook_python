@@ -3,7 +3,7 @@
 | Chapter | Topic | Status | Baseline backend | Optional backend | Notes |
 | --- | --- | --- | --- | --- | --- |
 | ch2 | Python/project basics | In progress | Python packaging | none | Package scaffold added |
-| ch3 | Rigid body motion | Not started | NumPy/SciPy | pytransform3d | Needed by all later chapters |
+| ch3 | Rigid body motion | In progress | NumPy/SciPy | pytransform3d | Homogeneous transform helpers added |
 | ch4 | Lie groups | Not started | local SO3/SE3 | jaxlie/spatialmath | Keep minimal |
 | ch5 | Camera and images | In progress | OpenCV | Open3D | Pinhole intrinsics helper added for ch7 depth backprojection |
 | ch6 | Nonlinear optimization | Not started | SciPy | GTSAM | Curve fitting first |

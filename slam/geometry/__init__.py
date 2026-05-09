@@ -2,5 +2,23 @@
 
 from slam.geometry.masks import normalize_mask
 from slam.geometry.triangulation import pixel_to_normalized, triangulate_points
+from slam.geometry.transforms import (
+    compose_transforms,
+    inverse_transform,
+    make_transform,
+    rotation_matrix_from_rotvec,
+    rotvec_from_rotation_matrix,
+    transform_points,
+)
 
-__all__ = ["normalize_mask", "pixel_to_normalized", "triangulate_points"]
+__all__ = [
+    "compose_transforms",
+    "inverse_transform",
+    "make_transform",
+    "normalize_mask",
+    "pixel_to_normalized",
+    "rotation_matrix_from_rotvec",
+    "rotvec_from_rotation_matrix",
+    "transform_points",
+    "triangulate_points",
+]
