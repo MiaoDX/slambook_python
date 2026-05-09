@@ -6,7 +6,7 @@
 | ch3 | Rigid body motion | In progress | NumPy/SciPy | pytransform3d | Homogeneous transform helpers added |
 | ch4 | Lie groups | In progress | local SO3/SE3 | jaxlie/spatialmath | Minimal exp/log helpers added |
 | ch5 | Camera and images | In progress | OpenCV | Open3D | Pinhole intrinsics and stereo depth helpers added |
-| ch6 | Nonlinear optimization | Not started | SciPy | GTSAM | Curve fitting first |
+| ch6 | Nonlinear optimization | In progress | SciPy | GTSAM | SciPy curve fitting example added |
 | ch7 | Feature VO | In progress | OpenCV | LightGlue/PyCOLMAP | ORB/SIFT interfaces, two-view helpers, 2D-2D, triangulation, and 3D-2D CLIs added |
 | ch8 | Direct VO | Not started | OpenCV/SciPy | JAX | Do after ch6 |
 | ch9 | VO project | Not started | OpenCV | GTSAM/PyCOLMAP | Main package milestone |
