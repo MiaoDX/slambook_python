@@ -2,7 +2,8 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, fields
+from pathlib import Path
 
 import numpy as np
 
@@ -115,6 +116,25 @@ class VisualOdometryConfig:
     min_matches: int = 20
     min_pnp_inliers: int = 10
     keyframe_min_translation: float = 0.1
+
+    @classmethod
+    def from_mapping(cls, values: dict[str, object]) -> "VisualOdometryConfig":
+        allowed = {field.name for field in fields(cls)}
+        unknown = sorted(set(values) - allowed)
+        if unknown:
+            raise ValueError(f"unknown VisualOdometryConfig fields: {', '.join(unknown)}")
+        return cls(**{key: values[key] for key in allowed if key in values})
+
+    @classmethod
+    def from_yaml(cls, path: str | Path) -> "VisualOdometryConfig":
+        import yaml
+
+        data = yaml.safe_load(Path(path).read_text(encoding="utf-8"))
+        if data is None:
+            data = {}
+        if not isinstance(data, dict):
+            raise ValueError("VO config YAML must contain a mapping")
+        return cls.from_mapping(data)
 
 
 def _points2(points: np.ndarray, *, name: str) -> np.ndarray:

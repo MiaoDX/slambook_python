@@ -1,0 +1,5 @@
+matcher: orb
+max_features: 1000
+min_matches: 20
+min_pnp_inliers: 10
+keyframe_min_translation: 0.1

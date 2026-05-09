@@ -55,3 +55,36 @@ def test_visual_odometry_config_defaults_are_core_only():
     assert config.matcher == "orb"
     assert config.max_features > 0
     assert config.min_matches > 0
+
+
+def test_visual_odometry_config_loads_from_yaml(tmp_path):
+    path = tmp_path / "vo.yaml"
+    path.write_text(
+        "\n".join(
+            [
+                "matcher: sift",
+                "max_features: 2000",
+                "min_matches: 40",
+                "min_pnp_inliers: 18",
+                "keyframe_min_translation: 0.25",
+            ]
+        ),
+        encoding="utf-8",
+    )
+
+    config = VisualOdometryConfig.from_yaml(path)
+
+    assert config.matcher == "sift"
+    assert config.max_features == 2000
+    assert config.min_matches == 40
+    assert config.min_pnp_inliers == 18
+    assert config.keyframe_min_translation == 0.25
+
+
+def test_visual_odometry_config_rejects_unknown_fields():
+    try:
+        VisualOdometryConfig.from_mapping({"matcher": "orb", "surprise": True})
+    except ValueError as exc:
+        assert "surprise" in str(exc)
+    else:
+        raise AssertionError("expected ValueError")

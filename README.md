@@ -35,6 +35,7 @@ Importing `slam` does not require optional modern backends.
 ## Current Migration Status
 
 See `docs/status.md` for the chapter-by-chapter status table.
+See `docs/datasets.md` for expected local dataset layouts.
 
 The first migrated example is Chapter 7 2D-2D feature pose estimation:
 
