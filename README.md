@@ -1,4 +1,49 @@
-Python implements of some of the projects/files in [slambook](https://github.com/gaoxiang12/slambook).
+Python implementations of selected projects and examples from
+[slambook](https://github.com/gaoxiang12/slambook).
+
+This repository is being migrated into a teaching-first Python package. The
+legacy root scripts remain in place while new importable modules and examples
+are added under `slam/` and `examples/`.
+
+## Install
+
+Core educational dependencies:
+
+```bash
+pip install -e .[core]
+```
+
+Core dependencies plus tests:
+
+```bash
+pip install -e .[core,test]
+python -m pytest
+```
+
+Optional dependency groups are defined for 3D/evaluation tools, modern matchers,
+and reference backends:
+
+```bash
+pip install -e .[3d]
+pip install -e .[modern]
+pip install -e .[backend]
+pip install -e .[all]
+```
+
+Importing `slam` does not require optional modern backends.
+
+## Current Migration Status
+
+See `docs/status.md` for the chapter-by-chapter status table.
+
+The first migrated example is Chapter 7 2D-2D feature pose estimation:
+
+```bash
+python examples/ch7_feature_vo/pose_estimation_2d2d.py \
+  --image0 data/slambook/ch7/1.png \
+  --image1 data/slambook/ch7/2.png \
+  --matcher orb
+```
 
 
 ## SOME NOTES:
@@ -57,4 +102,3 @@ Use `np.array(pts1)` or `np.float32(pts1)`
 * findFundamentalMat, findEssentialMat all have `mask` return value and means `inner points`, we should take care of them
 
 * [相机位姿求解问题？](https://www.zhihu.com/question/51510464)
-
