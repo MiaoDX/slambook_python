@@ -13,4 +13,4 @@
 | ch10 | Bundle adjustment | In progress | SciPy | GTSAM/PyCOLMAP | BAL parser and reprojection residuals added |
 | ch11 | Pose graph | In progress | SciPy small graph | GTSAM | g2o parser and edge error helpers added |
 | ch12 | Loop closure | In progress | OpenCV descriptors | FAISS/hloc | Baseline descriptor retrieval and temporal filtering added |
-| ch13 | Dense mapping | Not started | Open3D | Rerun | Replace PCL/Octomap concepts |
+| ch13 | Dense mapping | In progress | Open3D | Rerun | RGB-D to point-cloud array helpers added |
