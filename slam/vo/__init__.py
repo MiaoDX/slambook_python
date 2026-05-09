@@ -1,5 +1,6 @@
 """Visual odometry helpers."""
 
+from slam.vo.direct import bilinear_interpolate, build_image_pyramid, photometric_residuals
 from slam.vo.pnp import PnPResult, project_points, solve_pnp
 from slam.vo.two_view import (
     EssentialResult,
@@ -24,10 +25,13 @@ __all__ = [
     "PoseResult",
     "TwoViewResult",
     "VisualOdometryConfig",
+    "bilinear_interpolate",
+    "build_image_pyramid",
     "estimate_essential",
     "estimate_fundamental",
     "estimate_two_view_pose",
     "project_points",
+    "photometric_residuals",
     "recover_relative_pose",
     "solve_pnp",
 ]
