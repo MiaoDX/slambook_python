@@ -24,3 +24,30 @@ python examples/ch7_feature_vo/pose_estimation_2d2d.py \
 If no intrinsics are passed, the example uses a simple image-size-derived camera
 matrix so the pipeline remains runnable for inspection. Pose estimates from that
 fallback should not be treated as calibrated results.
+
+## Triangulation
+
+```bash
+python examples/ch7_feature_vo/triangulation.py \
+  --image0 data/slambook/ch7/1.png \
+  --image1 data/slambook/ch7/2.png \
+  --matcher orb \
+  --intrinsics 520.9 521.0 325.1 249.7 \
+  --output-points outputs/ch7_points.npy
+```
+
+## 3D-2D Pose Estimation
+
+`pose_estimation_3d2d.py` uses the first image's depth map to back-project
+matched pixels into camera-frame 3D points, then estimates the pose of the
+second image with PnP.
+
+```bash
+python examples/ch7_feature_vo/pose_estimation_3d2d.py \
+  --image0 data/slambook/ch7/1.png \
+  --image1 data/slambook/ch7/2.png \
+  --depth0 data/slambook/ch7/1_depth.png \
+  --matcher orb \
+  --intrinsics 520.9 521.0 325.1 249.7 \
+  --depth-scale 5000
+```
