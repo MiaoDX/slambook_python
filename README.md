@@ -50,6 +50,7 @@ Importing `slam` does not require optional modern backends.
 
 See `docs/status.md` for the chapter-by-chapter status table.
 See `docs/datasets.md` for expected local dataset layouts.
+See `docs/validation.md` for the latest local validation notes.
 
 Representative migrated examples:
 
