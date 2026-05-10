@@ -7,7 +7,7 @@ from slam.vo.direct import (
     photometric_residuals,
     refine_translation_2d,
 )
-from slam.vo.pnp import PnPResult, project_points, solve_pnp
+from slam.vo.pnp import PnPResult, project_points, solve_pnp, solve_pnp_ransac
 from slam.vo.two_view import (
     EssentialResult,
     FundamentalResult,
@@ -54,4 +54,5 @@ __all__ = [
     "refine_translation_2d",
     "match_local_map",
     "solve_pnp",
+    "solve_pnp_ransac",
 ]

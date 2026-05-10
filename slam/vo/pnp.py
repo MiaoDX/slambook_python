@@ -15,6 +15,13 @@ class PnPResult:
     rotation: np.ndarray
     translation: np.ndarray
     rvec: np.ndarray
+    mask: np.ndarray | None = None
+
+    @property
+    def inlier_count(self) -> int:
+        if self.mask is None:
+            return 0
+        return int(np.count_nonzero(self.mask))
 
 
 def solve_pnp(
@@ -27,23 +34,12 @@ def solve_pnp(
 ) -> PnPResult:
     """Estimate `T_cw` from `Nx3` object points and `Nx2` image points."""
 
-    points_3d = np.asarray(points_3d, dtype=np.float64)
-    points_2d = np.asarray(points_2d, dtype=np.float64)
-    camera_matrix = np.asarray(camera_matrix, dtype=np.float64)
-
-    if points_3d.ndim != 2 or points_3d.shape[1] != 3:
-        raise ValueError("points_3d must be an Nx3 array")
-    if points_2d.ndim != 2 or points_2d.shape[1] != 2:
-        raise ValueError("points_2d must be an Nx2 array")
-    if len(points_3d) != len(points_2d):
-        raise ValueError("points_3d and points_2d must have the same length")
-    if len(points_3d) < 4:
-        raise ValueError("solve_pnp requires at least 4 correspondences")
-    if camera_matrix.shape != (3, 3):
-        raise ValueError("camera_matrix must have shape 3x3")
-
-    if dist_coeffs is None:
-        dist_coeffs = np.zeros((4, 1), dtype=np.float64)
+    points_3d, points_2d, camera_matrix, dist_coeffs = _validate_pnp_inputs(
+        points_3d,
+        points_2d,
+        camera_matrix,
+        dist_coeffs=dist_coeffs,
+    )
 
     ok, rvec, translation = cv2.solvePnP(
         points_3d,
@@ -56,7 +52,48 @@ def solve_pnp(
         raise RuntimeError("cv2.solvePnP failed")
 
     rotation, _ = cv2.Rodrigues(rvec)
-    return PnPResult(rotation=rotation, translation=translation.reshape(3, 1), rvec=rvec.reshape(3, 1))
+    mask = np.ones(len(points_3d), dtype=bool)
+    return PnPResult(rotation=rotation, translation=translation.reshape(3, 1), rvec=rvec.reshape(3, 1), mask=mask)
+
+
+def solve_pnp_ransac(
+    points_3d: np.ndarray,
+    points_2d: np.ndarray,
+    camera_matrix: np.ndarray,
+    *,
+    dist_coeffs: np.ndarray | None = None,
+    flags: int = cv2.SOLVEPNP_EPNP,
+    iterations_count: int = 100,
+    reprojection_error: float = 8.0,
+    confidence: float = 0.99,
+) -> PnPResult:
+    """Estimate `T_cw` with OpenCV PnP RANSAC and a boolean inlier mask."""
+
+    points_3d, points_2d, camera_matrix, dist_coeffs = _validate_pnp_inputs(
+        points_3d,
+        points_2d,
+        camera_matrix,
+        dist_coeffs=dist_coeffs,
+    )
+
+    ok, rvec, translation, inliers = cv2.solvePnPRansac(
+        points_3d,
+        points_2d,
+        camera_matrix,
+        dist_coeffs,
+        iterationsCount=iterations_count,
+        reprojectionError=reprojection_error,
+        confidence=confidence,
+        flags=flags,
+    )
+    if not ok:
+        raise RuntimeError("cv2.solvePnPRansac failed")
+
+    mask = np.zeros(len(points_3d), dtype=bool)
+    if inliers is not None:
+        mask[np.asarray(inliers, dtype=np.int64).reshape(-1)] = True
+    rotation, _ = cv2.Rodrigues(rvec)
+    return PnPResult(rotation=rotation, translation=translation.reshape(3, 1), rvec=rvec.reshape(3, 1), mask=mask)
 
 
 def project_points(
@@ -79,3 +116,31 @@ def project_points(
     rvec, _ = cv2.Rodrigues(rotation)
     projected, _ = cv2.projectPoints(points_3d, rvec, translation, camera_matrix, dist_coeffs)
     return projected.reshape(-1, 2)
+
+
+def _validate_pnp_inputs(
+    points_3d: np.ndarray,
+    points_2d: np.ndarray,
+    camera_matrix: np.ndarray,
+    *,
+    dist_coeffs: np.ndarray | None,
+) -> tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
+    points_3d = np.asarray(points_3d, dtype=np.float64)
+    points_2d = np.asarray(points_2d, dtype=np.float64)
+    camera_matrix = np.asarray(camera_matrix, dtype=np.float64)
+
+    if points_3d.ndim != 2 or points_3d.shape[1] != 3:
+        raise ValueError("points_3d must be an Nx3 array")
+    if points_2d.ndim != 2 or points_2d.shape[1] != 2:
+        raise ValueError("points_2d must be an Nx2 array")
+    if len(points_3d) != len(points_2d):
+        raise ValueError("points_3d and points_2d must have the same length")
+    if len(points_3d) < 4:
+        raise ValueError("solve_pnp requires at least 4 correspondences")
+    if camera_matrix.shape != (3, 3):
+        raise ValueError("camera_matrix must have shape 3x3")
+    if dist_coeffs is None:
+        dist_coeffs = np.zeros((4, 1), dtype=np.float64)
+    else:
+        dist_coeffs = np.asarray(dist_coeffs, dtype=np.float64)
+    return points_3d, points_2d, camera_matrix, dist_coeffs
