@@ -2,6 +2,23 @@
 
 from __future__ import annotations
 
+from pathlib import Path
+
+from slam.viz.open3d_viz import OptionalVisualizationDependencyError
+
+
+def require_matplotlib():
+    """Import Matplotlib pyplot or raise with install guidance."""
+
+    try:
+        import matplotlib.pyplot as plt  # type: ignore
+    except ImportError as exc:
+        raise OptionalVisualizationDependencyError(
+            "Matplotlib is optional. Install it with `pip install -e .[core]` "
+            "and verify wheel support for your Python/platform."
+        ) from exc
+    return plt
+
 
 def trajectory_xyz(poses: list[np.ndarray]) -> np.ndarray:
     """Extract `Nx3` translation positions from `T_wc` poses."""
@@ -20,10 +37,9 @@ def trajectory_xyz(poses: list[np.ndarray]) -> np.ndarray:
 def plot_trajectory(poses: list[np.ndarray], *, ax=None, label: str | None = None):
     """Plot a 3D trajectory with Matplotlib and return the axes."""
 
-    import matplotlib.pyplot as plt
-
     xyz = trajectory_xyz(poses)
     if ax is None:
+        plt = require_matplotlib()
         figure = plt.figure()
         ax = figure.add_subplot(111, projection="3d")
     if len(xyz):
@@ -34,3 +50,17 @@ def plot_trajectory(poses: list[np.ndarray], *, ax=None, label: str | None = Non
     if label is not None:
         ax.legend()
     return ax
+
+
+def save_trajectory_plot(path: str | Path, poses: list[np.ndarray], *, label: str | None = None) -> None:
+    """Save a 3D trajectory plot to an image file."""
+
+    path = Path(path)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    plt = require_matplotlib()
+    figure = plt.figure()
+    ax = figure.add_subplot(111, projection="3d")
+    plot_trajectory(poses, ax=ax, label=label)
+    figure.tight_layout()
+    figure.savefig(path)
+    plt.close(figure)

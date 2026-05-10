@@ -7,6 +7,7 @@ from pathlib import Path
 
 from slam.io.trajectory import write_kitti_trajectory, write_tum_trajectory
 from slam.optimization.pose_graph import pose_graph_to_trajectory, read_g2o_pose_graph, solve_pose_graph
+from slam.viz import OptionalVisualizationDependencyError, save_trajectory_plot
 
 
 def _parse_args() -> argparse.Namespace:
@@ -16,6 +17,7 @@ def _parse_args() -> argparse.Namespace:
     parser.add_argument("--max-nfev", type=int, help="Maximum SciPy residual evaluations.")
     parser.add_argument("--output-tum", type=Path, help="Optional optimized TUM trajectory output path.")
     parser.add_argument("--output-kitti", type=Path, help="Optional optimized KITTI trajectory output path.")
+    parser.add_argument("--plot-output", type=Path, help="Optional optimized trajectory plot image path.")
     return parser.parse_args()
 
 
@@ -41,6 +43,16 @@ def main() -> None:
     if args.output_kitti is not None:
         write_kitti_trajectory(args.output_kitti, trajectory)
         print(f"wrote KITTI trajectory: {args.output_kitti}")
+    if args.plot_output is not None:
+        try:
+            save_trajectory_plot(
+                args.plot_output,
+                [pose.transform_wc for pose in trajectory],
+                label="optimized pose graph",
+            )
+        except OptionalVisualizationDependencyError as exc:
+            raise SystemExit(str(exc)) from exc
+        print(f"wrote trajectory plot: {args.plot_output}")
 
 
 if __name__ == "__main__":
