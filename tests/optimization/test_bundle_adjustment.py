@@ -1,3 +1,5 @@
+from pathlib import Path
+
 import numpy as np
 
 from slam.optimization.bundle_adjustment import (
@@ -105,6 +107,20 @@ def test_solve_bundle_adjustment_reduces_reprojection_rmse_with_fixed_camera():
 
     result = solve_bundle_adjustment(problem, optimize_cameras=False, optimize_points=True, max_nfev=100)
 
+    assert result.success
+    assert result.final_rmse < result.initial_rmse
+    assert result.final_rmse < 1e-6
+
+
+def test_included_ch10_fixture_runs_scipy_bundle_adjustment():
+    fixture = Path(__file__).resolve().parents[2] / "examples" / "ch10_bundle_adjustment" / "tiny_bal.txt"
+    problem = read_bal_problem(fixture)
+
+    result = solve_bundle_adjustment(problem, optimize_cameras=False, optimize_points=True, max_nfev=100)
+
+    assert problem.camera_params.shape == (1, 9)
+    assert problem.points_3d.shape == (4, 3)
+    assert len(problem.observations) == 4
     assert result.success
     assert result.final_rmse < result.initial_rmse
     assert result.final_rmse < 1e-6
