@@ -1,7 +1,7 @@
 import numpy as np
 import pytest
 
-from slam.io.image_retrieval import retrieve_loop_candidates, retrieve_nearest, temporal_exclusion_indices
+from slam.io.image_retrieval import mean_pool_descriptors, retrieve_loop_candidates, retrieve_nearest, temporal_exclusion_indices
 
 
 def test_retrieve_nearest_returns_expected_l2_order():
@@ -47,3 +47,16 @@ def test_retrieve_loop_candidates_excludes_temporal_neighbors():
 def test_cosine_distance_rejects_zero_descriptors():
     with pytest.raises(ValueError, match="non-zero"):
         retrieve_nearest(np.array([1.0, 0.0]), np.array([[0.0, 0.0]]), metric="cosine")
+
+
+def test_mean_pool_descriptors_normalizes_local_descriptor_average():
+    descriptors = np.array([[3.0, 0.0], [0.0, 4.0]])
+
+    pooled = mean_pool_descriptors(descriptors, output_dim=2)
+
+    np.testing.assert_allclose(np.linalg.norm(pooled), 1.0)
+    np.testing.assert_allclose(pooled, np.array([1.5, 2.0]) / 2.5)
+
+
+def test_mean_pool_descriptors_returns_zero_for_missing_descriptors():
+    np.testing.assert_allclose(mean_pool_descriptors(None, output_dim=3), np.zeros(3))

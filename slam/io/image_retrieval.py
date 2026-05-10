@@ -6,6 +6,8 @@ from dataclasses import dataclass
 
 import numpy as np
 
+from slam.features.opencv_features import detect_and_compute
+
 
 @dataclass(frozen=True)
 class RetrievalCandidate:
@@ -89,6 +91,34 @@ def retrieve_loop_candidates(
         metric=metric,
         exclude_indices=exclude,
     )
+
+
+def mean_pool_descriptors(descriptors: np.ndarray | None, *, output_dim: int) -> np.ndarray:
+    """Mean-pool local descriptors into one normalized global descriptor."""
+
+    if output_dim <= 0:
+        raise ValueError("output_dim must be positive")
+    if descriptors is None or len(descriptors) == 0:
+        return np.zeros(output_dim, dtype=np.float64)
+
+    descriptors = np.asarray(descriptors, dtype=np.float64)
+    if descriptors.ndim != 2:
+        raise ValueError("descriptors must be a 2D array")
+    pooled = descriptors.mean(axis=0)
+    if pooled.shape[0] != output_dim:
+        raise ValueError(f"expected descriptor dimension {output_dim}, got {pooled.shape[0]}")
+    norm = np.linalg.norm(pooled)
+    if norm == 0.0:
+        return pooled
+    return pooled / norm
+
+
+def opencv_global_descriptor(image: np.ndarray, *, feature: str = "orb", max_features: int = 1000) -> np.ndarray:
+    """Create a simple global descriptor from OpenCV local descriptors."""
+
+    _, descriptors = detect_and_compute(image, feature=feature, max_features=max_features)
+    output_dim = 32 if feature.lower() == "orb" else 128
+    return mean_pool_descriptors(descriptors, output_dim=output_dim)
 
 
 def _cosine_distance(database: np.ndarray, query: np.ndarray) -> np.ndarray:
