@@ -64,3 +64,20 @@ python examples/ch7_feature_vo/pose_estimation_3d2d.py \
   --intrinsics 520.9 521.0 325.1 249.7 \
   --depth-scale 5000
 ```
+
+## 3D-3D Pose Estimation
+
+`pose_estimation_3d3d.py` uses both depth maps to back-project matched pixels
+into paired 3D camera-frame points, then estimates `T_10` with SVD rigid
+registration.
+
+```bash
+python examples/ch7_feature_vo/pose_estimation_3d3d.py \
+  --image0 data/slambook/ch7/1.png \
+  --image1 data/slambook/ch7/2.png \
+  --depth0 data/slambook/ch7/1_depth.png \
+  --depth1 data/slambook/ch7/2_depth.png \
+  --matcher orb \
+  --intrinsics 520.9 521.0 325.1 249.7 \
+  --depth-scale 5000
+```

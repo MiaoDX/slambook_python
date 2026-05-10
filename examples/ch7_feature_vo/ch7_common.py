@@ -99,3 +99,34 @@ def object_points_from_depth(
 
     points_3d = intrinsics.pixel_to_camera(pixels0[valid], metric_depth[valid])
     return points_3d, pixels1[valid], valid
+
+
+def object_points_from_depth_pixels(
+    pixels: np.ndarray,
+    depth: np.ndarray,
+    intrinsics: CameraIntrinsics,
+    *,
+    depth_scale: float,
+) -> tuple[np.ndarray, np.ndarray]:
+    """Back-project pixels with valid depth and return the validity mask."""
+
+    pixels = np.asarray(pixels, dtype=np.float64)
+    if pixels.ndim != 2 or pixels.shape[1] != 2:
+        raise ValueError("pixels must be an Nx2 array")
+    if depth_scale <= 0:
+        raise ValueError("depth_scale must be positive")
+
+    rounded = np.rint(pixels).astype(np.int64)
+    height, width = depth.shape[:2]
+    in_bounds = (
+        (rounded[:, 0] >= 0)
+        & (rounded[:, 0] < width)
+        & (rounded[:, 1] >= 0)
+        & (rounded[:, 1] < height)
+    )
+    raw_depth = np.zeros(len(pixels), dtype=np.float64)
+    valid_indices = np.flatnonzero(in_bounds)
+    raw_depth[valid_indices] = depth[rounded[valid_indices, 1], rounded[valid_indices, 0]].astype(np.float64)
+    metric_depth = raw_depth / depth_scale
+    valid = in_bounds & np.isfinite(metric_depth) & (metric_depth > 0.0)
+    return intrinsics.pixel_to_camera(pixels[valid], metric_depth[valid]), valid
