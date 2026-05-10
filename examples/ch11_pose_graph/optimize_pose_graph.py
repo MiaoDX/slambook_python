@@ -7,7 +7,7 @@ from pathlib import Path
 
 from slam.io.trajectory import write_kitti_trajectory, write_tum_trajectory
 from slam.optimization.pose_graph import pose_graph_to_trajectory, read_g2o_pose_graph, solve_pose_graph
-from slam.viz import OptionalVisualizationDependencyError, save_trajectory_plot
+from slam.viz import OptionalVisualizationDependencyError, log_trajectory_rerun, require_rerun, save_trajectory_plot
 
 
 def _parse_args() -> argparse.Namespace:
@@ -18,6 +18,8 @@ def _parse_args() -> argparse.Namespace:
     parser.add_argument("--output-tum", type=Path, help="Optional optimized TUM trajectory output path.")
     parser.add_argument("--output-kitti", type=Path, help="Optional optimized KITTI trajectory output path.")
     parser.add_argument("--plot-output", type=Path, help="Optional optimized trajectory plot image path.")
+    parser.add_argument("--rerun", action="store_true", help="Log the optimized trajectory to Rerun.")
+    parser.add_argument("--rerun-entity", default="world/optimized_trajectory", help="Rerun entity path for --rerun.")
     return parser.parse_args()
 
 
@@ -53,6 +55,19 @@ def main() -> None:
         except OptionalVisualizationDependencyError as exc:
             raise SystemExit(str(exc)) from exc
         print(f"wrote trajectory plot: {args.plot_output}")
+    if args.rerun:
+        try:
+            rr = require_rerun()
+            rr.init("slambook_pose_graph", spawn=True)
+            log_trajectory_rerun(
+                args.rerun_entity,
+                [pose.transform_wc for pose in trajectory],
+                color=[0, 128, 255],
+                radius=0.02,
+            )
+        except OptionalVisualizationDependencyError as exc:
+            raise SystemExit(str(exc)) from exc
+        print(f"logged Rerun trajectory: {args.rerun_entity}")
 
 
 if __name__ == "__main__":
