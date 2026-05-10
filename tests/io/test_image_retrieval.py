@@ -1,7 +1,19 @@
+import builtins
+import sys
+import types
+
 import numpy as np
 import pytest
 
-from slam.io.image_retrieval import mean_pool_descriptors, retrieve_loop_candidates, retrieve_nearest, temporal_exclusion_indices
+from slam.io.image_retrieval import (
+    OptionalRetrievalDependencyError,
+    mean_pool_descriptors,
+    require_faiss,
+    retrieve_loop_candidates,
+    retrieve_nearest,
+    retrieve_nearest_faiss,
+    temporal_exclusion_indices,
+)
 
 
 def test_retrieve_nearest_returns_expected_l2_order():
@@ -44,6 +56,60 @@ def test_retrieve_loop_candidates_excludes_temporal_neighbors():
     assert [candidate.index for candidate in candidates] == [4, 3]
 
 
+def test_retrieve_loop_candidates_supports_faiss_backend(monkeypatch):
+    _install_fake_faiss(monkeypatch)
+    descriptors = np.array(
+        [
+            [0.0, 0.0],
+            [0.1, 0.0],
+            [0.2, 0.0],
+            [9.0, 9.0],
+            [0.05, 0.02],
+        ]
+    )
+
+    candidates = retrieve_loop_candidates(
+        descriptors,
+        current_index=1,
+        top_k=2,
+        temporal_window=1,
+        backend="faiss",
+    )
+
+    assert [candidate.index for candidate in candidates] == [4, 3]
+
+
+def test_retrieve_nearest_faiss_matches_l2_order_and_scores(monkeypatch):
+    _install_fake_faiss(monkeypatch)
+    database = np.array([[0.0, 0.0], [3.0, 4.0], [1.0, 1.0], [10.0, 10.0]])
+    query = np.array([0.9, 1.1])
+
+    candidates = retrieve_nearest_faiss(query, database, top_k=3)
+
+    assert [candidate.index for candidate in candidates] == [2, 0, 1]
+    np.testing.assert_allclose(candidates[0].score, np.linalg.norm(database[2] - query), atol=1e-6)
+
+
+def test_require_faiss_has_modern_install_guidance(monkeypatch):
+    real_import = builtins.__import__
+
+    def fake_import(name, *args, **kwargs):
+        if name == "faiss":
+            raise ImportError("missing faiss for test")
+        return real_import(name, *args, **kwargs)
+
+    monkeypatch.setattr(builtins, "__import__", fake_import)
+
+    with pytest.raises(OptionalRetrievalDependencyError, match=r"pip install -e \.\[modern\]"):
+        require_faiss()
+
+
+def test_faiss_backend_rejects_cosine_metric(monkeypatch):
+    _install_fake_faiss(monkeypatch)
+    with pytest.raises(ValueError, match="only l2"):
+        retrieve_loop_candidates(np.ones((3, 2)), current_index=0, metric="cosine", backend="faiss")
+
+
 def test_cosine_distance_rejects_zero_descriptors():
     with pytest.raises(ValueError, match="non-zero"):
         retrieve_nearest(np.array([1.0, 0.0]), np.array([[0.0, 0.0]]), metric="cosine")
@@ -60,3 +126,24 @@ def test_mean_pool_descriptors_normalizes_local_descriptor_average():
 
 def test_mean_pool_descriptors_returns_zero_for_missing_descriptors():
     np.testing.assert_allclose(mean_pool_descriptors(None, output_dim=3), np.zeros(3))
+
+
+def _install_fake_faiss(monkeypatch):
+    class FakeIndexFlatL2:
+        def __init__(self, dimension):
+            self.dimension = dimension
+            self.database = None
+
+        def add(self, database):
+            database = np.asarray(database, dtype=np.float32)
+            assert database.shape[1] == self.dimension
+            self.database = database
+
+        def search(self, queries, k):
+            queries = np.asarray(queries, dtype=np.float32)
+            distances = np.sum((self.database[None, :, :] - queries[:, None, :]) ** 2, axis=2)
+            order = np.argsort(distances, axis=1)[:, :k]
+            sorted_distances = np.take_along_axis(distances, order, axis=1)
+            return sorted_distances.astype(np.float32), order.astype(np.int64)
+
+    monkeypatch.setitem(sys.modules, "faiss", types.SimpleNamespace(IndexFlatL2=FakeIndexFlatL2))
