@@ -1,0 +1,9 @@
+# Tiny SE3 pose graph for the Chapter 11 SciPy optimizer example.
+# Vertex 0 is intended to be fixed. Vertices 1 and 2 start with translation
+# drift; the odometry and loop edges prefer poses at x=1 and x=2.
+VERTEX_SE3:QUAT 0 0 0 0 0 0 0 1
+VERTEX_SE3:QUAT 1 1.2 0 0 0 0 0 1
+VERTEX_SE3:QUAT 2 2.3 0 0 0 0 0 1
+EDGE_SE3:QUAT 0 1 1 0 0 0 0 0 1 1 0 0 0 0 0 1 0 0 0 0 1 0 0 0 1 0 0 1 0 1
+EDGE_SE3:QUAT 1 2 1 0 0 0 0 0 1 1 0 0 0 0 0 1 0 0 0 0 1 0 0 0 1 0 0 1 0 1
+EDGE_SE3:QUAT 0 2 2 0 0 0 0 0 1 1 0 0 0 0 0 1 0 0 0 0 1 0 0 0 1 0 0 1 0 1

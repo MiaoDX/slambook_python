@@ -1,3 +1,5 @@
+from pathlib import Path
+
 import numpy as np
 
 from slam.optimization.pose_graph import (
@@ -110,3 +112,18 @@ def test_solve_pose_graph_reduces_inconsistent_translation_error(tmp_path):
     assert result.final_error < result.initial_error
     assert result.final_error < 1e-12
     np.testing.assert_allclose(result.graph.vertices[1].transform_wi[:3, 3], [1.0, 0.0, 0.0], atol=1e-6)
+
+
+def test_included_ch11_fixture_optimizes_with_scipy_baseline():
+    fixture = Path(__file__).resolve().parents[2] / "examples" / "ch11_pose_graph" / "tiny_pose_graph.g2o"
+    graph = read_g2o_pose_graph(fixture)
+
+    result = solve_pose_graph(graph, fixed_vertex_id=0)
+
+    assert sorted(graph.vertices) == [0, 1, 2]
+    assert len(graph.edges) == 3
+    assert result.success
+    assert result.final_error < result.initial_error
+    assert result.final_error < 1e-12
+    np.testing.assert_allclose(result.graph.vertices[1].transform_wi[:3, 3], [1.0, 0.0, 0.0], atol=1e-6)
+    np.testing.assert_allclose(result.graph.vertices[2].transform_wi[:3, 3], [2.0, 0.0, 0.0], atol=1e-6)
