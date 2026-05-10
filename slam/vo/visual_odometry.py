@@ -10,7 +10,7 @@ import numpy as np
 from slam.camera.pinhole import CameraIntrinsics
 from slam.features.opencv_features import detect_and_compute, match_descriptors
 from slam.geometry.transforms import inverse_transform, make_transform
-from slam.vo.pnp import PnPResult, solve_pnp_ransac
+from slam.vo.pnp import PnPResult, refine_pnp_pose_scipy, solve_pnp_ransac
 
 
 @dataclass(frozen=True)
@@ -167,6 +167,8 @@ class VisualOdometryConfig:
     min_matches: int = 20
     min_pnp_inliers: int = 10
     keyframe_min_translation: float = 0.1
+    motion_only_ba: bool = True
+    motion_only_ba_max_nfev: int = 40
 
     @classmethod
     def from_mapping(cls, values: dict[str, object]) -> "VisualOdometryConfig":
@@ -349,6 +351,7 @@ def estimate_frame_pose_from_local_map(
             message=f"need at least {config.min_pnp_inliers} PnP inliers, got {pnp.inlier_count}",
         )
 
+    pnp = _refine_local_map_pose(matches, pnp, camera, config)
     transform_cw = make_transform(pnp.rotation, pnp.translation)
     pose_wc = inverse_transform(transform_cw)
     return LocalMapTrackingResult(success=True, pose_wc=pose_wc, pnp=pnp, matches=matches)
@@ -426,6 +429,41 @@ def _empty_local_map_matches() -> LocalMapMatchSet:
         points_2d=np.empty((0, 2), dtype=np.float64),
         frame_keypoint_indices=np.empty(0, dtype=np.int64),
         distances=np.empty(0, dtype=np.float64),
+    )
+
+
+def _refine_local_map_pose(
+    matches: LocalMapMatchSet,
+    pnp: PnPResult,
+    camera: Camera,
+    config: VisualOdometryConfig,
+) -> PnPResult:
+    if not config.motion_only_ba:
+        return pnp
+
+    inliers = pnp.mask if pnp.mask is not None else np.ones(len(matches), dtype=bool)
+    if np.count_nonzero(inliers) < 4:
+        return pnp
+
+    try:
+        refined = refine_pnp_pose_scipy(
+            matches.points_3d[inliers],
+            matches.points_2d[inliers],
+            camera.matrix,
+            pnp.rotation,
+            pnp.translation,
+            max_nfev=config.motion_only_ba_max_nfev,
+        )
+    except (RuntimeError, ValueError):
+        return pnp
+
+    if not refined.success or not np.isfinite(refined.final_rmse) or refined.final_rmse > refined.initial_rmse:
+        return pnp
+    return PnPResult(
+        rotation=refined.pnp.rotation,
+        translation=refined.pnp.translation,
+        rvec=refined.pnp.rvec,
+        mask=pnp.mask,
     )
 
 

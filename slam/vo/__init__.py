@@ -11,7 +11,14 @@ from slam.vo.direct import (
     refine_pose_se3,
     refine_translation_2d,
 )
-from slam.vo.pnp import PnPResult, project_points, solve_pnp, solve_pnp_ransac
+from slam.vo.pnp import (
+    MotionOnlyBAResult,
+    PnPResult,
+    project_points,
+    refine_pnp_pose_scipy,
+    solve_pnp,
+    solve_pnp_ransac,
+)
 from slam.vo.two_view import (
     EssentialResult,
     FundamentalResult,
@@ -49,6 +56,7 @@ __all__ = [
     "LocalMapTrackingResult",
     "Map",
     "MapPoint",
+    "MotionOnlyBAResult",
     "PnPResult",
     "PoseResult",
     "TwoViewResult",
@@ -68,6 +76,7 @@ __all__ = [
     "photometric_residuals",
     "project_reference_points_se3",
     "recover_relative_pose",
+    "refine_pnp_pose_scipy",
     "refine_pose_se3",
     "refine_translation_2d",
     "match_local_map",
