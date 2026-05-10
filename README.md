@@ -37,13 +37,23 @@ Importing `slam` does not require optional modern backends.
 See `docs/status.md` for the chapter-by-chapter status table.
 See `docs/datasets.md` for expected local dataset layouts.
 
-The first migrated example is Chapter 7 2D-2D feature pose estimation:
+Representative migrated examples:
 
 ```bash
 python examples/ch7_feature_vo/pose_estimation_2d2d.py \
   --image0 data/slambook/ch7/1.png \
   --image1 data/slambook/ch7/2.png \
   --matcher orb
+
+python examples/ch10_bundle_adjustment/scipy_bal.py \
+  --bal examples/ch10_bundle_adjustment/tiny_bal.txt \
+  --fix-cameras
+
+python examples/ch13_dense_mapping/rgbd_fusion.py \
+  --color data/slambook/ch13/color.png \
+  --depth data/slambook/ch13/depth.png \
+  --intrinsics FX FY CX CY \
+  --output outputs/ch13_cloud.ply
 ```
 
 ## Legacy Root Scripts

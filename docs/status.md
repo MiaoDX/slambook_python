@@ -5,7 +5,7 @@
 | ch2 | Python/project basics | In progress | Python packaging | none | Package scaffold and core-only CI added |
 | ch3 | Rigid body motion | In progress | NumPy/SciPy | pytransform3d | Homogeneous transform helper and CLI example added |
 | ch4 | Lie groups | In progress | local SO3/SE3 | jaxlie/spatialmath | Minimal exp/log helper and CLI example added |
-| ch5 | Camera and images | In progress | OpenCV | Open3D | Pinhole/stereo helpers, distortion coefficients, and image basics CLI added |
+| ch5 | Camera and images | In progress | OpenCV | Open3D | Pinhole/stereo helpers, distortion coefficients, image basics CLI, and RGB-D point cloud CLI added |
 | ch6 | Nonlinear optimization | In progress | SciPy | GTSAM | SciPy curve fitting example added |
 | ch7 | Feature VO | In progress | OpenCV | LightGlue/LoFTR/PyCOLMAP | ORB/SIFT interfaces, LightGlue/LoFTR adapters, PyCOLMAP reference reconstruction CLI, optional Rerun match/track logging, and legacy script status documented |
 | ch8 | Direct VO | In progress | OpenCV/SciPy | JAX | LK flow, sparse 2D/SE3 residual refinement CLIs, image pyramid, and interpolation helpers added |
