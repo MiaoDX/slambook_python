@@ -6,9 +6,10 @@ from dataclasses import dataclass
 from pathlib import Path
 
 import numpy as np
+from scipy.optimize import least_squares
 from scipy.spatial.transform import Rotation
 
-from slam.geometry.lie import se3_log
+from slam.geometry.lie import se3_exp, se3_log
 from slam.geometry.transforms import inverse_transform, make_transform
 
 
@@ -34,6 +35,19 @@ class PoseGraphEdge:
 class PoseGraph:
     vertices: dict[int, PoseGraphVertex]
     edges: list[PoseGraphEdge]
+
+
+@dataclass(frozen=True)
+class PoseGraphOptimizationResult:
+    """Result from baseline SciPy pose graph optimization."""
+
+    graph: PoseGraph
+    initial_error: float
+    final_error: float
+    cost: float
+    nfev: int
+    success: bool
+    message: str
 
 
 def read_g2o_pose_graph(path: str | Path) -> PoseGraph:
@@ -95,9 +109,102 @@ def total_edge_error(graph: PoseGraph) -> float:
     return total
 
 
+def pack_pose_graph_parameters(graph: PoseGraph, *, fixed_vertex_id: int | None = None) -> np.ndarray:
+    """Pack non-fixed vertex poses as SE3 log vectors."""
+
+    ids = _optimized_vertex_ids(graph, fixed_vertex_id=fixed_vertex_id)
+    if not ids:
+        return np.empty(0, dtype=np.float64)
+    return np.concatenate([se3_log(graph.vertices[vertex_id].transform_wi) for vertex_id in ids])
+
+
+def unpack_pose_graph_parameters(
+    graph: PoseGraph,
+    params: np.ndarray,
+    *,
+    fixed_vertex_id: int | None = None,
+) -> PoseGraph:
+    """Unpack SE3 log vectors into a new graph, preserving fixed vertices and edges."""
+
+    params = np.asarray(params, dtype=np.float64).reshape(-1)
+    ids = _optimized_vertex_ids(graph, fixed_vertex_id=fixed_vertex_id)
+    expected = 6 * len(ids)
+    if len(params) != expected:
+        raise ValueError(f"expected {expected} pose graph parameters, got {len(params)}")
+
+    vertices = dict(graph.vertices)
+    for index, vertex_id in enumerate(ids):
+        vertices[vertex_id] = PoseGraphVertex(
+            id=vertex_id,
+            transform_wi=se3_exp(params[6 * index : 6 * index + 6]),
+        )
+    return PoseGraph(vertices=vertices, edges=graph.edges)
+
+
+def pose_graph_residuals_from_parameters(
+    params: np.ndarray,
+    graph: PoseGraph,
+    *,
+    fixed_vertex_id: int | None = None,
+) -> np.ndarray:
+    """Flatten all pose graph edge errors for a packed parameter vector."""
+
+    unpacked = unpack_pose_graph_parameters(graph, params, fixed_vertex_id=fixed_vertex_id)
+    if not unpacked.edges:
+        return np.empty(0, dtype=np.float64)
+    return np.concatenate([edge_error(unpacked, edge) for edge in unpacked.edges])
+
+
+def solve_pose_graph(
+    graph: PoseGraph,
+    *,
+    fixed_vertex_id: int | None = None,
+    max_nfev: int | None = None,
+) -> PoseGraphOptimizationResult:
+    """Optimize pose graph vertices with SciPy least-squares."""
+
+    if fixed_vertex_id is None and graph.vertices:
+        fixed_vertex_id = min(graph.vertices)
+
+    initial_params = pack_pose_graph_parameters(graph, fixed_vertex_id=fixed_vertex_id)
+    initial_error = total_edge_error(graph)
+    if initial_params.size == 0:
+        return PoseGraphOptimizationResult(
+            graph=graph,
+            initial_error=initial_error,
+            final_error=initial_error,
+            cost=0.0,
+            nfev=0,
+            success=True,
+            message="No vertices selected for optimization.",
+        )
+
+    result = least_squares(
+        pose_graph_residuals_from_parameters,
+        initial_params,
+        args=(graph,),
+        kwargs={"fixed_vertex_id": fixed_vertex_id},
+        max_nfev=max_nfev,
+    )
+    optimized = unpack_pose_graph_parameters(graph, result.x, fixed_vertex_id=fixed_vertex_id)
+    return PoseGraphOptimizationResult(
+        graph=optimized,
+        initial_error=initial_error,
+        final_error=total_edge_error(optimized),
+        cost=float(result.cost),
+        nfev=int(result.nfev),
+        success=bool(result.success),
+        message=str(result.message),
+    )
+
+
 def _transform_from_xyz_quat(x: float, y: float, z: float, qx: float, qy: float, qz: float, qw: float) -> np.ndarray:
     rotation = Rotation.from_quat([qx, qy, qz, qw]).as_matrix()
     return make_transform(rotation, np.array([x, y, z], dtype=np.float64))
+
+
+def _optimized_vertex_ids(graph: PoseGraph, *, fixed_vertex_id: int | None) -> list[int]:
+    return [vertex_id for vertex_id in sorted(graph.vertices) if vertex_id != fixed_vertex_id]
 
 
 def _upper_triangle_to_matrix(values: list[float], *, size: int) -> np.ndarray:

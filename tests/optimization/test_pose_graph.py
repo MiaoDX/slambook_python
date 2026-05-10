@@ -1,6 +1,6 @@
 import numpy as np
 
-from slam.optimization.pose_graph import edge_error, read_g2o_pose_graph, total_edge_error
+from slam.optimization.pose_graph import edge_error, read_g2o_pose_graph, solve_pose_graph, total_edge_error
 
 
 def test_read_g2o_pose_graph_parses_vertices_edges_and_information(tmp_path):
@@ -59,3 +59,26 @@ def test_pose_graph_edge_error_detects_inconsistent_translation(tmp_path):
     graph = read_g2o_pose_graph(path)
 
     assert total_edge_error(graph) > 0.0
+
+
+def test_solve_pose_graph_reduces_inconsistent_translation_error(tmp_path):
+    path = tmp_path / "tiny.g2o"
+    information_upper = " ".join(["1"] * 21)
+    path.write_text(
+        "\n".join(
+            [
+                "VERTEX_SE3:QUAT 0 0 0 0 0 0 0 1",
+                "VERTEX_SE3:QUAT 1 2 0 0 0 0 0 1",
+                f"EDGE_SE3:QUAT 0 1 1 0 0 0 0 0 1 {information_upper}",
+            ]
+        ),
+        encoding="utf-8",
+    )
+    graph = read_g2o_pose_graph(path)
+
+    result = solve_pose_graph(graph, fixed_vertex_id=0)
+
+    assert result.success
+    assert result.final_error < result.initial_error
+    assert result.final_error < 1e-12
+    np.testing.assert_allclose(result.graph.vertices[1].transform_wi[:3, 3], [1.0, 0.0, 0.0], atol=1e-6)
