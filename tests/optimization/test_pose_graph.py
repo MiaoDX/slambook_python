@@ -1,6 +1,14 @@
 import numpy as np
 
-from slam.optimization.pose_graph import edge_error, read_g2o_pose_graph, solve_pose_graph, total_edge_error
+from slam.optimization.pose_graph import (
+    PoseGraph,
+    PoseGraphVertex,
+    edge_error,
+    pose_graph_to_trajectory,
+    read_g2o_pose_graph,
+    solve_pose_graph,
+    total_edge_error,
+)
 
 
 def test_read_g2o_pose_graph_parses_vertices_edges_and_information(tmp_path):
@@ -59,6 +67,26 @@ def test_pose_graph_edge_error_detects_inconsistent_translation(tmp_path):
     graph = read_g2o_pose_graph(path)
 
     assert total_edge_error(graph) > 0.0
+
+
+def test_pose_graph_to_trajectory_sorts_vertices_and_copies_transforms():
+    transform0 = np.eye(4, dtype=np.float64)
+    transform2 = np.eye(4, dtype=np.float64)
+    transform2[0, 3] = 2.0
+    graph = PoseGraph(
+        vertices={
+            2: PoseGraphVertex(id=2, transform_wi=transform2),
+            0: PoseGraphVertex(id=0, transform_wi=transform0),
+        },
+        edges=[],
+    )
+
+    trajectory = pose_graph_to_trajectory(graph)
+
+    assert [pose.timestamp for pose in trajectory] == [0.0, 2.0]
+    np.testing.assert_allclose(trajectory[1].transform_wc[:3, 3], [2.0, 0.0, 0.0])
+    trajectory[1].transform_wc[0, 3] = 99.0
+    assert graph.vertices[2].transform_wi[0, 3] == 2.0
 
 
 def test_solve_pose_graph_reduces_inconsistent_translation_error(tmp_path):

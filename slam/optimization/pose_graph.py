@@ -11,6 +11,7 @@ from scipy.spatial.transform import Rotation
 
 from slam.geometry.lie import se3_exp, se3_log
 from slam.geometry.transforms import inverse_transform, make_transform
+from slam.io.trajectory import PoseStamped
 
 
 @dataclass(frozen=True)
@@ -107,6 +108,19 @@ def total_edge_error(graph: PoseGraph) -> float:
         error = edge_error(graph, edge)
         total += float(error @ error)
     return total
+
+
+def pose_graph_to_trajectory(graph: PoseGraph) -> list[PoseStamped]:
+    """Return graph vertices as a sorted timestamped trajectory.
+
+    Vertex ids become timestamps, and each `T_wi` is exported as the world pose
+    for trajectory writers such as TUM and KITTI.
+    """
+
+    return [
+        PoseStamped(timestamp=float(vertex_id), transform_wc=graph.vertices[vertex_id].transform_wi.copy())
+        for vertex_id in sorted(graph.vertices)
+    ]
 
 
 def pack_pose_graph_parameters(graph: PoseGraph, *, fixed_vertex_id: int | None = None) -> np.ndarray:
