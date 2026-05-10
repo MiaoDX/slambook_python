@@ -4,6 +4,9 @@ from __future__ import annotations
 
 import argparse
 
+from slam.optimization.gtsam_backend import OptionalBackendDependencyError
+from slam.optimization.pycolmap_backend import require_pycolmap
+
 
 def _parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__)
@@ -14,12 +17,9 @@ def _parse_args() -> argparse.Namespace:
 def main() -> None:
     _parse_args()
     try:
-        import pycolmap  # noqa: F401
-    except ImportError as exc:
-        raise SystemExit(
-            "PyCOLMAP is an optional reference backend. Install it with `pip install -e .[modern]` "
-            "and verify wheel support for your Python/platform."
-        ) from exc
+        require_pycolmap()
+    except OptionalBackendDependencyError as exc:
+        raise SystemExit(str(exc)) from exc
     raise SystemExit("PyCOLMAP is installed; reconstruction adapter implementation is pending.")
 
 

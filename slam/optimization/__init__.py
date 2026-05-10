@@ -34,6 +34,7 @@ from slam.optimization.pose_graph import (
     total_edge_error,
     unpack_pose_graph_parameters,
 )
+from slam.optimization.pycolmap_backend import require_pycolmap, run_pycolmap_reconstruction
 
 __all__ = [
     "BALObservation",
@@ -60,7 +61,9 @@ __all__ = [
     "reprojection_residuals",
     "reprojection_rmse",
     "residuals_from_parameters",
+    "require_pycolmap",
     "require_gtsam",
+    "run_pycolmap_reconstruction",
     "solve_bundle_adjustment",
     "solve_pose_graph",
     "total_edge_error",
