@@ -47,6 +47,17 @@ python examples/ch9_project/run_vo.py \
   --output-kitti outputs/ch9.txt
 ```
 
+For the depth-assisted local-map runner, provide a matching depth directory:
+
+```bash
+python examples/ch9_project/run_local_map_vo.py \
+  --images data/slambook/ch9/images \
+  --depths data/slambook/ch9/depth \
+  --intrinsics FX FY CX CY \
+  --depth-scale 5000 \
+  --output-tum outputs/ch9_local_map.tum
+```
+
 For RGB-D examples, depth scale must be explicit. TUM-style `uint16` depth often
 uses `--depth-scale 5000`; metric floating-point depth should use
 `--depth-scale 1`.
@@ -67,7 +78,8 @@ python examples/ch13_dense_mapping/rgbd_fusion.py \
   --pose-file data/slambook/ch13/pose.txt \
   --intrinsics FX FY CX CY \
   --depth-scale 5000 \
-  --output outputs/ch13_map.ply
+  --output outputs/ch13_map.ply \
+  --occupancy-output outputs/ch13_occupancy.npz
 ```
 
 TUM RGB-D association files are parsed from `rgb.txt` and `depth.txt` using the

@@ -64,8 +64,9 @@ python examples/ch10_bundle_adjustment/scipy_bal.py \
   --fix-cameras
 
 python examples/ch13_dense_mapping/rgbd_fusion.py \
-  --color data/slambook/ch13/color.png \
-  --depth data/slambook/ch13/depth.png \
+  --color-dir data/slambook/ch13/color \
+  --depth-dir data/slambook/ch13/depth \
+  --pose-file data/slambook/ch13/pose.txt \
   --intrinsics FX FY CX CY \
   --output outputs/ch13_cloud.ply
 ```

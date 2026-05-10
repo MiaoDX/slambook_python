@@ -239,7 +239,7 @@ Work:
   - `CameraIntrinsics`
   - pixel-to-camera coordinates
   - camera-to-pixel projection
-  - distortion placeholder API
+  - distortion coefficient API
 - Implement `slam.camera.stereo`:
   - rectification wrapper
   - disparity-to-depth helper
@@ -483,7 +483,7 @@ Work:
 - Implement bilinear interpolation.
 - Implement photometric residuals.
 - Implement direct pose refinement with SciPy.
-- Keep JAX/JAXLie as optional future work, not part of the initial port.
+- Keep JAX/JAXLie as optional comparison backends outside the initial port.
 
 Tests:
 
