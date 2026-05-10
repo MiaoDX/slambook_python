@@ -7,12 +7,16 @@ import pytest
 
 from slam.io.image_retrieval import (
     OptionalRetrievalDependencyError,
+    VisualVocabulary,
+    bow_histogram,
     mean_pool_descriptors,
+    opencv_bow_descriptor,
     require_faiss,
     retrieve_loop_candidates,
     retrieve_nearest,
     retrieve_nearest_faiss,
     temporal_exclusion_indices,
+    train_visual_vocabulary,
 )
 
 
@@ -126,6 +130,43 @@ def test_mean_pool_descriptors_normalizes_local_descriptor_average():
 
 def test_mean_pool_descriptors_returns_zero_for_missing_descriptors():
     np.testing.assert_allclose(mean_pool_descriptors(None, output_dim=3), np.zeros(3))
+
+
+def test_train_visual_vocabulary_and_bow_histogram_cluster_descriptors(tmp_path):
+    descriptors = np.array(
+        [
+            [0.0, 0.0],
+            [0.1, 0.0],
+            [10.0, 10.0],
+            [10.1, 10.0],
+        ]
+    )
+
+    vocabulary = train_visual_vocabulary(descriptors, word_count=2, seed=1)
+    histogram = bow_histogram(descriptors[:3], vocabulary)
+    path = tmp_path / "vocabulary.npz"
+    vocabulary.save(path)
+    loaded = VisualVocabulary.load(path)
+
+    assert vocabulary.centers.shape == (2, 2)
+    np.testing.assert_allclose(loaded.centers, vocabulary.centers)
+    np.testing.assert_allclose(histogram.sum(), 1.0)
+    assert np.count_nonzero(histogram) == 2
+
+
+def test_bow_histogram_rejects_descriptor_dimension_mismatch():
+    vocabulary = VisualVocabulary(np.zeros((2, 3)))
+    with pytest.raises(ValueError, match="dimension"):
+        bow_histogram(np.zeros((4, 2)), vocabulary)
+
+
+def test_opencv_bow_descriptor_returns_zero_for_textureless_image():
+    vocabulary = VisualVocabulary(np.zeros((3, 32)))
+    image = np.zeros((32, 32), dtype=np.uint8)
+
+    descriptor = opencv_bow_descriptor(image, vocabulary, feature="orb")
+
+    np.testing.assert_allclose(descriptor, np.zeros(3))
 
 
 def _install_fake_faiss(monkeypatch):

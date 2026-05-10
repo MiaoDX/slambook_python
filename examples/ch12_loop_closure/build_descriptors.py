@@ -10,7 +10,7 @@ import numpy as np
 
 from slam.features.opencv_features import SUPPORTED_FEATURES
 from slam.io.datasets import list_image_sequence
-from slam.io.image_retrieval import opencv_global_descriptor
+from slam.io.image_retrieval import VisualVocabulary, opencv_bow_descriptor, opencv_global_descriptor
 
 
 def _parse_args() -> argparse.Namespace:
@@ -20,6 +20,8 @@ def _parse_args() -> argparse.Namespace:
     parser.add_argument("--output", required=True, type=Path)
     parser.add_argument("--feature", choices=sorted(SUPPORTED_FEATURES), default="orb")
     parser.add_argument("--max-features", type=int, default=1000)
+    parser.add_argument("--vocabulary", type=Path, help="Optional BoW vocabulary .npz from train_vocabulary.py.")
+    parser.add_argument("--normalize", choices=("none", "l1", "l2"), default="l1")
     return parser.parse_args()
 
 
@@ -36,15 +38,28 @@ def main() -> None:
     if not frames:
         raise SystemExit("No images matched the requested pattern.")
 
+    vocabulary = VisualVocabulary.load(args.vocabulary) if args.vocabulary is not None else None
     descriptors = []
     for frame in frames:
-        descriptors.append(
-            opencv_global_descriptor(
-                _read_gray(frame.image_path),
-                feature=args.feature,
-                max_features=args.max_features,
+        image = _read_gray(frame.image_path)
+        if vocabulary is None:
+            descriptors.append(
+                opencv_global_descriptor(
+                    image,
+                    feature=args.feature,
+                    max_features=args.max_features,
+                )
             )
-        )
+        else:
+            descriptors.append(
+                opencv_bow_descriptor(
+                    image,
+                    vocabulary,
+                    feature=args.feature,
+                    max_features=args.max_features,
+                    normalize=args.normalize,
+                )
+            )
     matrix = np.vstack(descriptors)
     args.output.parent.mkdir(parents=True, exist_ok=True)
     np.save(args.output, matrix)
@@ -52,6 +67,10 @@ def main() -> None:
     print(f"images: {args.images}")
     print(f"pattern: {args.pattern}")
     print(f"feature: {args.feature}")
+    if args.vocabulary is not None:
+        print(f"vocabulary: {args.vocabulary}")
+        print(f"visual words: {vocabulary.word_count}")
+        print(f"normalization: {args.normalize}")
     print(f"descriptor shape: {matrix.shape}")
     print(f"output: {args.output}")
 
