@@ -3,10 +3,35 @@
 from __future__ import annotations
 
 from pathlib import Path
+from dataclasses import dataclass
 
 import numpy as np
 
 from slam.geometry.transforms import transform_points
+
+
+@dataclass(frozen=True)
+class OccupancyVoxelGrid:
+    """Occupied voxel centers and observation counts."""
+
+    voxel_size: float
+    indices: np.ndarray
+    centers: np.ndarray
+    counts: np.ndarray
+
+    def __post_init__(self) -> None:
+        indices = np.asarray(self.indices, dtype=np.int64)
+        centers = np.asarray(self.centers, dtype=np.float64)
+        counts = np.asarray(self.counts, dtype=np.int64)
+        if indices.ndim != 2 or indices.shape[1] != 3:
+            raise ValueError("indices must be an Nx3 array")
+        if centers.ndim != 2 or centers.shape[1] != 3 or len(centers) != len(indices):
+            raise ValueError("centers must be an Nx3 array with one center per voxel")
+        if counts.ndim != 1 or len(counts) != len(indices):
+            raise ValueError("counts must have one value per voxel")
+        object.__setattr__(self, "indices", indices)
+        object.__setattr__(self, "centers", centers)
+        object.__setattr__(self, "counts", counts)
 
 
 def transform_point_cloud(points: np.ndarray, transform_ab: np.ndarray) -> np.ndarray:
@@ -87,6 +112,50 @@ def voxel_downsample(
     points_out = np.asarray(down_points, dtype=np.float64)
     colors_out = None if colors is None else np.clip(np.asarray(down_colors), 0, 255).astype(np.uint8)
     return points_out, colors_out
+
+
+def occupancy_voxel_grid(points: np.ndarray, *, voxel_size: float) -> OccupancyVoxelGrid:
+    """Convert a point cloud into occupied voxel centers and counts."""
+
+    if voxel_size <= 0:
+        raise ValueError("voxel_size must be positive")
+    points = np.asarray(points, dtype=np.float64)
+    if points.ndim != 2 or points.shape[1] != 3:
+        raise ValueError("points must be an Nx3 array")
+    if len(points) == 0:
+        return OccupancyVoxelGrid(
+            voxel_size=float(voxel_size),
+            indices=np.empty((0, 3), dtype=np.int64),
+            centers=np.empty((0, 3), dtype=np.float64),
+            counts=np.empty(0, dtype=np.int64),
+        )
+
+    voxel_indices = np.floor(points / voxel_size).astype(np.int64)
+    unique, counts = np.unique(voxel_indices, axis=0, return_counts=True)
+    order = np.lexsort((unique[:, 2], unique[:, 1], unique[:, 0]))
+    unique = unique[order]
+    counts = counts[order]
+    centers = (unique.astype(np.float64) + 0.5) * voxel_size
+    return OccupancyVoxelGrid(
+        voxel_size=float(voxel_size),
+        indices=unique,
+        centers=centers,
+        counts=counts,
+    )
+
+
+def write_occupancy_npz(path: str | Path, grid: OccupancyVoxelGrid) -> None:
+    """Write occupied voxel grid arrays to a compressed `.npz` file."""
+
+    path = Path(path)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    np.savez_compressed(
+        path,
+        voxel_size=np.asarray([grid.voxel_size], dtype=np.float64),
+        indices=grid.indices,
+        centers=grid.centers,
+        counts=grid.counts,
+    )
 
 
 def estimate_normals(

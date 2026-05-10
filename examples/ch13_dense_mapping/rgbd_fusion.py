@@ -11,7 +11,14 @@ import numpy as np
 from slam.camera.pinhole import CameraIntrinsics
 from slam.io.datasets import list_image_sequence
 from slam.io.trajectory import read_slambook_pose_file
-from slam.mapping.pointcloud import estimate_normals, fuse_point_clouds, voxel_downsample, write_ply_ascii
+from slam.mapping.pointcloud import (
+    estimate_normals,
+    fuse_point_clouds,
+    occupancy_voxel_grid,
+    voxel_downsample,
+    write_occupancy_npz,
+    write_ply_ascii,
+)
 from slam.mapping.rgbd import rgbd_to_point_cloud
 from slam.viz import (
     OptionalVisualizationDependencyError,
@@ -42,6 +49,8 @@ def _parse_args() -> argparse.Namespace:
     parser.add_argument("--normal-k", type=int, default=16, help="Neighbor count for --estimate-normals.")
     parser.add_argument("--mesh-output", type=Path, help="Optional Open3D Poisson mesh output path.")
     parser.add_argument("--poisson-depth", type=int, default=8, help="Poisson reconstruction depth for --mesh-output.")
+    parser.add_argument("--occupancy-output", type=Path, help="Optional occupied voxel grid .npz output path.")
+    parser.add_argument("--occupancy-voxel-size", type=float, default=0.05)
     parser.add_argument("--rerun", action="store_true", help="Log the output point cloud to Rerun.")
     parser.add_argument("--rerun-entity", default="world/rgbd_cloud", help="Rerun entity path for --rerun.")
     return parser.parse_args()
@@ -133,6 +142,9 @@ def main() -> None:
         points, colors = voxel_downsample(points, colors, voxel_size=args.voxel_size)
     normals = estimate_normals(points, k=args.normal_k, viewpoint=np.zeros(3)) if args.estimate_normals else None
     write_ply_ascii(args.output, points, colors, normals)
+    if args.occupancy_output is not None:
+        occupancy = occupancy_voxel_grid(points, voxel_size=args.occupancy_voxel_size)
+        write_occupancy_npz(args.occupancy_output, occupancy)
     if args.mesh_output is not None:
         try:
             mesh, densities = reconstruct_mesh_poisson(
@@ -172,6 +184,10 @@ def main() -> None:
         print(f"mesh output: {args.mesh_output}")
         print(f"mesh density count: {len(densities)}")
         print(f"poisson depth: {args.poisson_depth}")
+    if args.occupancy_output is not None:
+        print(f"occupancy output: {args.occupancy_output}")
+        print(f"occupancy voxel count: {len(occupancy.indices)}")
+        print(f"occupancy voxel size: {args.occupancy_voxel_size}")
     if args.rerun:
         print(f"logged Rerun point cloud: {args.rerun_entity}")
     print(f"depth scale: {args.depth_scale}")

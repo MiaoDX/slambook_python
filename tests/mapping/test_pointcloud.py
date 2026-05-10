@@ -2,7 +2,14 @@ import numpy as np
 import pytest
 
 from slam.geometry.transforms import make_transform
-from slam.mapping.pointcloud import estimate_normals, fuse_point_clouds, voxel_downsample, write_ply_ascii
+from slam.mapping.pointcloud import (
+    estimate_normals,
+    fuse_point_clouds,
+    occupancy_voxel_grid,
+    voxel_downsample,
+    write_occupancy_npz,
+    write_ply_ascii,
+)
 
 
 def test_write_ply_ascii_writes_points_and_colors(tmp_path):
@@ -78,3 +85,17 @@ def test_estimate_normals_orients_toward_viewpoint():
 def test_estimate_normals_requires_three_points():
     with pytest.raises(ValueError, match="at least 3 points"):
         estimate_normals(np.zeros((2, 3)), k=3)
+
+
+def test_occupancy_voxel_grid_groups_points_and_writes_npz(tmp_path):
+    points = np.array([[0.1, 0.1, 0.1], [0.2, 0.1, 0.1], [1.1, 0.0, 0.0]])
+
+    grid = occupancy_voxel_grid(points, voxel_size=1.0)
+    path = tmp_path / "occupancy.npz"
+    write_occupancy_npz(path, grid)
+    loaded = np.load(path)
+
+    np.testing.assert_array_equal(grid.indices, [[0, 0, 0], [1, 0, 0]])
+    np.testing.assert_array_equal(grid.counts, [2, 1])
+    np.testing.assert_allclose(grid.centers, [[0.5, 0.5, 0.5], [1.5, 0.5, 0.5]])
+    np.testing.assert_array_equal(loaded["counts"], [2, 1])
