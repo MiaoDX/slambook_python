@@ -18,5 +18,13 @@ UV_DEFAULT_INDEX=https://pypi.tuna.tsinghua.edu.cn/simple uv sync --all-extras -
 UV_DEFAULT_INDEX=https://pypi.tuna.tsinghua.edu.cn/simple uv run --all-extras --frozen python -m pytest tests_optional
 ```
 
+On macOS, some optional native wheels can load duplicate OpenMP runtimes when
+FAISS and PyCOLMAP are imported in one pytest process. If Python aborts during
+the optional import checks, rerun with:
+
+```bash
+KMP_DUPLICATE_LIB_OK=TRUE UV_DEFAULT_INDEX=https://pypi.tuna.tsinghua.edu.cn/simple uv run --all-extras --frozen python -m pytest tests_optional
+```
+
 Missing optional packages are reported as pytest skips in this suite; that is
 expected when the environment was installed with only `core` and `test`.

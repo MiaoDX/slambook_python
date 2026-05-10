@@ -132,6 +132,14 @@ UV_DEFAULT_INDEX=https://pypi.tuna.tsinghua.edu.cn/simple uv sync --all-extras -
 UV_DEFAULT_INDEX=https://pypi.tuna.tsinghua.edu.cn/simple uv run --all-extras --frozen python -m pytest tests_optional
 ```
 
+On macOS, FAISS and PyCOLMAP can load duplicate OpenMP runtimes in the same
+pytest process. If Python aborts while importing optional native backends, run
+the optional suite with:
+
+```bash
+KMP_DUPLICATE_LIB_OK=TRUE UV_DEFAULT_INDEX=https://pypi.tuna.tsinghua.edu.cn/simple uv run --all-extras --frozen python -m pytest tests_optional
+```
+
 ## Legacy Scripts
 
 The original root-level scripts are kept under `legacy/` as the historical
