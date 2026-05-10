@@ -2,9 +2,13 @@
 
 from slam.vo.direct import (
     DirectAlignmentResult,
+    DirectPoseAlignmentResult,
     bilinear_interpolate,
     build_image_pyramid,
+    direct_pose_residuals,
     photometric_residuals,
+    project_reference_points_se3,
+    refine_pose_se3,
     refine_translation_2d,
 )
 from slam.vo.pnp import PnPResult, project_points, solve_pnp, solve_pnp_ransac
@@ -37,6 +41,7 @@ from slam.vo.visual_odometry import (
 __all__ = [
     "Camera",
     "DirectAlignmentResult",
+    "DirectPoseAlignmentResult",
     "EssentialResult",
     "FundamentalResult",
     "Frame",
@@ -53,6 +58,7 @@ __all__ = [
     "build_image_pyramid",
     "chain_relative_pose",
     "create_frame",
+    "direct_pose_residuals",
     "estimate_essential",
     "estimate_frame_pose_from_local_map",
     "estimate_fundamental",
@@ -60,7 +66,9 @@ __all__ = [
     "estimate_two_view_pose",
     "project_points",
     "photometric_residuals",
+    "project_reference_points_se3",
     "recover_relative_pose",
+    "refine_pose_se3",
     "refine_translation_2d",
     "match_local_map",
     "solve_pnp",
