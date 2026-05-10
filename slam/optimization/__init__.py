@@ -14,6 +14,12 @@ from slam.optimization.bundle_adjustment import (
     unpack_bal_parameters,
 )
 from slam.optimization.curve_fitting import CurveFitResult, exponential_curve, fit_exponential_curve
+from slam.optimization.gtsam_backend import (
+    OptionalBackendDependencyError,
+    optimize_bundle_adjustment_gtsam,
+    optimize_pose_graph_gtsam,
+    require_gtsam,
+)
 from slam.optimization.pose_graph import (
     PoseGraph,
     PoseGraphEdge,
@@ -37,6 +43,7 @@ __all__ = [
     "PoseGraphEdge",
     "PoseGraphOptimizationResult",
     "PoseGraphVertex",
+    "OptionalBackendDependencyError",
     "bal_jacobian_sparsity",
     "exponential_curve",
     "fit_exponential_curve",
@@ -44,11 +51,14 @@ __all__ = [
     "pack_bal_parameters",
     "pack_pose_graph_parameters",
     "pose_graph_residuals_from_parameters",
+    "optimize_bundle_adjustment_gtsam",
+    "optimize_pose_graph_gtsam",
     "read_bal_problem",
     "read_g2o_pose_graph",
     "reprojection_residuals",
     "reprojection_rmse",
     "residuals_from_parameters",
+    "require_gtsam",
     "solve_bundle_adjustment",
     "solve_pose_graph",
     "total_edge_error",
