@@ -28,7 +28,9 @@ from slam.vo.visual_odometry import (
     VisualOdometry,
     VisualOdometryConfig,
     chain_relative_pose,
+    create_frame,
     estimate_frame_pose_from_local_map,
+    extract_frame_features,
     match_local_map,
 )
 
@@ -50,9 +52,11 @@ __all__ = [
     "bilinear_interpolate",
     "build_image_pyramid",
     "chain_relative_pose",
+    "create_frame",
     "estimate_essential",
     "estimate_frame_pose_from_local_map",
     "estimate_fundamental",
+    "extract_frame_features",
     "estimate_two_view_pose",
     "project_points",
     "photometric_residuals",

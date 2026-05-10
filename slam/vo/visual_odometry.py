@@ -8,7 +8,7 @@ from pathlib import Path
 import numpy as np
 
 from slam.camera.pinhole import CameraIntrinsics
-from slam.features.opencv_features import match_descriptors
+from slam.features.opencv_features import detect_and_compute, match_descriptors
 from slam.geometry.transforms import inverse_transform, make_transform
 from slam.vo.pnp import PnPResult, solve_pnp_ransac
 
@@ -210,6 +210,47 @@ def chain_relative_pose(
     return previous_pose_wc @ transform_01
 
 
+def extract_frame_features(
+    image: np.ndarray,
+    *,
+    feature: str = "orb",
+    max_features: int = 1000,
+) -> tuple[np.ndarray, np.ndarray | None]:
+    """Detect features for a VO frame and return `Nx2` keypoint coordinates."""
+
+    keypoints, descriptors = detect_and_compute(image, feature=feature, max_features=max_features)
+    points = np.asarray([keypoint.pt for keypoint in keypoints], dtype=np.float64).reshape(-1, 2)
+    return points, descriptors
+
+
+def create_frame(
+    frame_id: int,
+    timestamp: float,
+    image: np.ndarray,
+    *,
+    pose_wc: np.ndarray | None = None,
+    config: VisualOdometryConfig | None = None,
+    feature: str | None = None,
+) -> Frame:
+    """Create a `Frame` and populate OpenCV feature coordinates/descriptors."""
+
+    config = VisualOdometryConfig() if config is None else config
+    keypoints, descriptors = extract_frame_features(
+        image,
+        feature=feature or config.matcher,
+        max_features=config.max_features,
+    )
+    kwargs = {"pose_wc": pose_wc} if pose_wc is not None else {}
+    return Frame(
+        id=frame_id,
+        timestamp=timestamp,
+        image=image,
+        keypoints=keypoints,
+        descriptors=descriptors,
+        **kwargs,
+    )
+
+
 def match_local_map(
     frame: Frame,
     slam_map: Map,
@@ -321,6 +362,24 @@ class VisualOdometry:
     config: VisualOdometryConfig = field(default_factory=VisualOdometryConfig)
     map: Map = field(default_factory=Map)
     current_frame: Frame | None = None
+
+    def create_frame(
+        self,
+        frame_id: int,
+        timestamp: float,
+        image: np.ndarray,
+        *,
+        pose_wc: np.ndarray | None = None,
+        feature: str | None = None,
+    ) -> Frame:
+        return create_frame(
+            frame_id,
+            timestamp,
+            image,
+            pose_wc=pose_wc,
+            config=self.config,
+            feature=feature,
+        )
 
     def insert_keyframe(self, frame: Frame) -> Frame:
         self.map.insert_keyframe(frame)

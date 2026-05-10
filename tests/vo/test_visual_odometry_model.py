@@ -11,7 +11,9 @@ from slam.vo.visual_odometry import (
     VisualOdometry,
     VisualOdometryConfig,
     chain_relative_pose,
+    create_frame,
     estimate_frame_pose_from_local_map,
+    extract_frame_features,
     match_local_map,
 )
 from slam.vo.pnp import project_points
@@ -59,6 +61,27 @@ def test_map_inserts_keyframes_and_landmark_observations():
 
     assert slam_map.keyframes[1].is_keyframe
     assert slam_map.points[2].observed_times == 1
+
+
+def test_extract_frame_features_returns_point_array_for_blank_image():
+    image = np.zeros((24, 24), dtype=np.uint8)
+
+    keypoints, descriptors = extract_frame_features(image, max_features=50)
+
+    assert keypoints.shape == (0, 2)
+    assert descriptors is None
+
+
+def test_create_frame_populates_features_and_pose():
+    image = np.zeros((24, 24), dtype=np.uint8)
+    pose = make_transform(np.eye(3), np.array([1.0, 0.0, 0.0]))
+
+    frame = create_frame(4, 1.25, image, pose_wc=pose, config=VisualOdometryConfig(max_features=50))
+
+    assert frame.id == 4
+    assert frame.timestamp == 1.25
+    assert frame.keypoints.shape == (0, 2)
+    np.testing.assert_allclose(frame.pose_wc, pose)
 
 
 def test_match_local_map_returns_pnp_correspondences():
@@ -171,6 +194,16 @@ def test_visual_odometry_keyframe_threshold_uses_last_keyframe_pose():
 
     assert not vo.should_insert_keyframe(near)
     assert vo.should_insert_keyframe(far)
+
+
+def test_visual_odometry_create_frame_uses_config():
+    camera = Camera(CameraIntrinsics(fx=700.0, fy=710.0, cx=320.0, cy=240.0))
+    vo = VisualOdometry(camera=camera, config=VisualOdometryConfig(max_features=25))
+
+    frame = vo.create_frame(5, 2.0, np.zeros((24, 24), dtype=np.uint8))
+
+    assert frame.id == 5
+    assert frame.keypoints.shape == (0, 2)
 
 
 def test_visual_odometry_track_local_map_updates_pose_and_keyframes():
