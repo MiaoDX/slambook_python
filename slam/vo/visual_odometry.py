@@ -9,7 +9,7 @@ import numpy as np
 
 from slam.camera.pinhole import CameraIntrinsics
 from slam.features.opencv_features import detect_and_compute, match_descriptors
-from slam.geometry.transforms import inverse_transform, make_transform
+from slam.geometry.transforms import inverse_transform, make_transform, transform_points
 from slam.vo.pnp import PnPResult, refine_pnp_pose_scipy, solve_pnp_ransac
 
 
@@ -355,6 +355,47 @@ def estimate_frame_pose_from_local_map(
     transform_cw = make_transform(pnp.rotation, pnp.translation)
     pose_wc = inverse_transform(transform_cw)
     return LocalMapTrackingResult(success=True, pose_wc=pose_wc, pnp=pnp, matches=matches)
+
+
+def insert_depth_map_points(
+    frame: Frame,
+    slam_map: Map,
+    camera: Camera,
+    depth: np.ndarray,
+    *,
+    depth_scale: float = 5000.0,
+    max_points: int | None = None,
+    start_id: int | None = None,
+) -> int:
+    """Insert depth-backed feature landmarks from a keyframe into the map."""
+
+    if frame.keypoints is None or frame.descriptors is None:
+        return 0
+    if depth_scale <= 0:
+        raise ValueError("depth_scale must be positive")
+    depth = np.asarray(depth)
+    if depth.ndim != 2:
+        raise ValueError("depth must be a 2D array")
+    next_id = max(slam_map.points, default=-1) + 1 if start_id is None else int(start_id)
+    height, width = depth.shape
+    inserted = 0
+    for keypoint, descriptor in zip(frame.keypoints, frame.descriptors):
+        if max_points is not None and inserted >= max_points:
+            break
+        x, y = np.rint(keypoint).astype(np.int64)
+        if x < 0 or x >= width or y < 0 or y >= height:
+            continue
+        metric_depth = float(depth[y, x]) / depth_scale
+        if not np.isfinite(metric_depth) or metric_depth <= 0.0:
+            continue
+        point_c = camera.pixel_to_camera(np.asarray(keypoint, dtype=np.float64).reshape(1, 2), np.array([metric_depth]))
+        point_w = transform_points(frame.pose_wc, point_c)[0]
+        point = MapPoint(id=next_id, position_w=point_w, descriptor=np.asarray(descriptor).copy())
+        point.add_observation(frame.id, keypoint)
+        slam_map.insert_map_point(point)
+        next_id += 1
+        inserted += 1
+    return inserted
 
 
 @dataclass

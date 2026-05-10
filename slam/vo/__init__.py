@@ -43,6 +43,7 @@ from slam.vo.visual_odometry import (
     create_frame,
     estimate_frame_pose_from_local_map,
     extract_frame_features,
+    insert_depth_map_points,
     match_local_map,
 )
 
@@ -74,6 +75,7 @@ __all__ = [
     "estimate_fundamental",
     "extract_frame_features",
     "estimate_two_view_pose",
+    "insert_depth_map_points",
     "project_points",
     "photometric_residuals",
     "project_reference_points_se3",

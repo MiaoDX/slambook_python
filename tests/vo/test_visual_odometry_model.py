@@ -14,6 +14,7 @@ from slam.vo.visual_odometry import (
     create_frame,
     estimate_frame_pose_from_local_map,
     extract_frame_features,
+    insert_depth_map_points,
     match_local_map,
 )
 from slam.vo.pnp import project_points
@@ -61,6 +62,29 @@ def test_map_inserts_keyframes_and_landmark_observations():
 
     assert slam_map.keyframes[1].is_keyframe
     assert slam_map.points[2].observed_times == 1
+
+
+def test_insert_depth_map_points_backprojects_keyframe_features_into_world():
+    camera = Camera(CameraIntrinsics(fx=100.0, fy=100.0, cx=0.0, cy=0.0))
+    frame = Frame(
+        id=1,
+        timestamp=0.0,
+        image=np.zeros((2, 2), dtype=np.uint8),
+        pose_wc=make_transform(np.eye(3), np.array([1.0, 2.0, 3.0])),
+        keypoints=np.array([[0.0, 0.0], [1.0, 1.0]]),
+        descriptors=np.array([[1, 2, 3], [4, 5, 6]], dtype=np.uint8),
+    )
+    slam_map = Map()
+    slam_map.insert_keyframe(frame)
+    depth = np.array([[1000, 0], [0, 2000]], dtype=np.uint16)
+
+    inserted = insert_depth_map_points(frame, slam_map, camera, depth, depth_scale=1000.0)
+
+    assert inserted == 2
+    assert len(slam_map.points) == 2
+    np.testing.assert_allclose(slam_map.points[0].position_w, [1.0, 2.0, 4.0])
+    np.testing.assert_allclose(slam_map.points[1].position_w, [1.02, 2.02, 5.0])
+    assert slam_map.points[0].observed_times == 1
 
 
 def test_extract_frame_features_returns_point_array_for_blank_image():
