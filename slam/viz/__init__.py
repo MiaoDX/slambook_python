@@ -8,12 +8,13 @@ from slam.viz.open3d_viz import (
     require_open3d,
     write_triangle_mesh_open3d,
 )
-from slam.viz.rerun_viz import log_matches_rerun, log_points_rerun, log_trajectory_rerun, require_rerun
+from slam.viz.rerun_viz import log_matches_rerun, log_points_rerun, log_tracks_rerun, log_trajectory_rerun, require_rerun
 
 __all__ = [
     "OptionalVisualizationDependencyError",
     "log_matches_rerun",
     "log_points_rerun",
+    "log_tracks_rerun",
     "log_trajectory_rerun",
     "pointcloud_to_open3d",
     "plot_trajectory",

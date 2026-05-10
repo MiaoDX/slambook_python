@@ -12,7 +12,7 @@ from slam.viz.open3d_viz import (
     require_open3d,
     write_triangle_mesh_open3d,
 )
-from slam.viz.rerun_viz import log_matches_rerun, log_trajectory_rerun, require_rerun
+from slam.viz.rerun_viz import log_matches_rerun, log_tracks_rerun, log_trajectory_rerun, require_rerun
 
 
 def test_require_open3d_has_install_guidance(monkeypatch):
@@ -132,6 +132,35 @@ def test_log_matches_rerun_rejects_mismatched_lengths(monkeypatch):
     monkeypatch.setitem(sys.modules, "rerun", types.SimpleNamespace())
     with pytest.raises(ValueError, match="same length"):
         log_matches_rerun("world/matches", np.zeros((2, 2)), np.zeros((1, 2)))
+
+
+def test_log_tracks_rerun_uses_line_strips(monkeypatch):
+    calls = []
+
+    class FakeLineStrips2D:
+        def __init__(self, strips, **kwargs):
+            self.strips = strips
+            self.kwargs = kwargs
+
+    fake_rerun = types.SimpleNamespace(
+        LineStrips2D=FakeLineStrips2D,
+        log=lambda entity_path, archetype: calls.append((entity_path, archetype)),
+    )
+    monkeypatch.setitem(sys.modules, "rerun", fake_rerun)
+    tracks = [np.array([[0.0, 0.0], [1.0, 1.0]]), np.array([[2.0, 2.0], [3.0, 4.0]])]
+
+    log_tracks_rerun("world/tracks", tracks, color=[255, 128, 0], radius=1.5)
+
+    assert calls[0][0] == "world/tracks"
+    np.testing.assert_allclose(calls[0][1].strips[0], tracks[0])
+    np.testing.assert_allclose(calls[0][1].strips[1], tracks[1])
+    assert calls[0][1].kwargs == {"colors": [255, 128, 0], "radii": 1.5}
+
+
+def test_log_tracks_rerun_rejects_bad_track_shape(monkeypatch):
+    monkeypatch.setitem(sys.modules, "rerun", types.SimpleNamespace())
+    with pytest.raises(ValueError, match="Nx2"):
+        log_tracks_rerun("world/tracks", [np.zeros((2, 3))])
 
 
 def _install_fake_open3d(monkeypatch):

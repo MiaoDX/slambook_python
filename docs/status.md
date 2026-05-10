@@ -7,7 +7,7 @@
 | ch4 | Lie groups | In progress | local SO3/SE3 | jaxlie/spatialmath | Minimal exp/log helper and CLI example added |
 | ch5 | Camera and images | In progress | OpenCV | Open3D | Pinhole/stereo helpers, distortion coefficients, and image basics CLI added |
 | ch6 | Nonlinear optimization | In progress | SciPy | GTSAM | SciPy curve fitting example added |
-| ch7 | Feature VO | In progress | OpenCV | LightGlue/PyCOLMAP | ORB/SIFT interfaces, learned matcher guards, ch7 CLIs, optional Rerun match logging, and legacy script status documented |
+| ch7 | Feature VO | In progress | OpenCV | LightGlue/PyCOLMAP | ORB/SIFT interfaces, learned matcher guards, ch7 CLIs, optional Rerun match/track logging, and legacy script status documented |
 | ch8 | Direct VO | In progress | OpenCV/SciPy | JAX | LK flow, sparse 2D/SE3 residual refinement CLIs, image pyramid, and interpolation helpers added |
 | ch9 | VO project | In progress | OpenCV | GTSAM/PyCOLMAP | Data model, frame feature extraction, VO coordinator, local-map matching/tracking, trajectory/viz helpers, documented image layout, and smoke-tested monocular runner added |
 | ch10 | Bundle adjustment | In progress | SciPy | GTSAM/PyCOLMAP | BAL parser, included tiny BAL fixture, `scipy_ba` module, SciPy CLI, PyCOLMAP reference guard, and optional backend guards added |

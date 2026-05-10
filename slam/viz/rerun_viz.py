@@ -66,6 +66,33 @@ def log_matches_rerun(
     rr.log(f"{entity_path}/lines", rr.LineStrips2D(np.stack([points0, points1], axis=1), **line_kwargs))
 
 
+def log_tracks_rerun(
+    entity_path: str,
+    tracks: list[np.ndarray],
+    *,
+    color: list[int] | None = None,
+    radius: float | None = None,
+) -> None:
+    """Log 2D feature tracks to Rerun as line strips."""
+
+    import numpy as np
+
+    rr = require_rerun()
+    strips = []
+    for track in tracks:
+        track = np.asarray(track, dtype=np.float64)
+        if track.ndim != 2 or track.shape[1] != 2:
+            raise ValueError("each track must be an Nx2 array")
+        strips.append(track)
+
+    kwargs = {}
+    if color is not None:
+        kwargs["colors"] = color
+    if radius is not None:
+        kwargs["radii"] = radius
+    rr.log(entity_path, rr.LineStrips2D(strips, **kwargs))
+
+
 def log_trajectory_rerun(
     entity_path: str,
     poses: list[np.ndarray],
