@@ -10,8 +10,10 @@ from slam.vo.visual_odometry import (
     MapPoint,
     VisualOdometryConfig,
     chain_relative_pose,
+    estimate_frame_pose_from_local_map,
     match_local_map,
 )
+from slam.vo.pnp import project_points
 
 
 def test_camera_wrapper_projects_with_intrinsics():
@@ -93,6 +95,57 @@ def test_match_local_map_returns_empty_without_descriptors():
     assert len(matches) == 0
     assert matches.points_3d.shape == (0, 3)
     assert matches.points_2d.shape == (0, 2)
+
+
+def test_estimate_frame_pose_from_local_map_tracks_pose_with_pnp_ransac():
+    camera = Camera(CameraIntrinsics(fx=700.0, fy=710.0, cx=320.0, cy=240.0))
+    points_w = np.array(
+        [
+            [-1.0, -0.6, 4.0],
+            [-0.2, -0.7, 4.5],
+            [0.6, -0.3, 5.0],
+            [1.0, 0.2, 5.5],
+            [-0.8, 0.4, 6.0],
+            [0.0, 0.7, 6.5],
+        ]
+    )
+    descriptors = np.zeros((len(points_w), 32), dtype=np.uint8)
+    descriptors[:, 0] = np.arange(1, len(points_w) + 1, dtype=np.uint8)
+    slam_map = Map(
+        points={
+            index: MapPoint(id=index, position_w=point_w, descriptor=descriptors[index])
+            for index, point_w in enumerate(points_w)
+        }
+    )
+    transform_cw = make_transform(np.eye(3), np.array([0.2, -0.1, 0.3]))
+    pixels = project_points(points_w, transform_cw[:3, :3], transform_cw[:3, 3], camera.matrix)
+    frame = Frame(
+        id=2,
+        timestamp=0.1,
+        image=np.zeros((8, 8), dtype=np.uint8),
+        keypoints=pixels,
+        descriptors=descriptors.copy(),
+    )
+    config = VisualOdometryConfig(min_pnp_inliers=4)
+
+    result = estimate_frame_pose_from_local_map(frame, slam_map, camera, config=config)
+
+    assert result.success
+    assert result.pnp is not None
+    assert result.pnp.inlier_count >= 4
+    np.testing.assert_allclose(result.pose_wc, np.linalg.inv(transform_cw), atol=1e-5)
+
+
+def test_estimate_frame_pose_from_local_map_reports_insufficient_matches():
+    camera = Camera(CameraIntrinsics(fx=700.0, fy=710.0, cx=320.0, cy=240.0))
+    frame = Frame(id=2, timestamp=0.1, image=np.zeros((8, 8), dtype=np.uint8))
+
+    result = estimate_frame_pose_from_local_map(frame, Map(), camera)
+
+    assert not result.success
+    assert result.pose_wc is None
+    assert result.pnp is None
+    assert "need at least 4" in result.message
 
 
 def test_local_map_match_set_rejects_mismatched_lengths():

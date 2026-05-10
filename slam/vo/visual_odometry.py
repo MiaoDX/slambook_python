@@ -10,6 +10,7 @@ import numpy as np
 from slam.camera.pinhole import CameraIntrinsics
 from slam.features.opencv_features import match_descriptors
 from slam.geometry.transforms import inverse_transform, make_transform
+from slam.vo.pnp import PnPResult, solve_pnp_ransac
 
 
 @dataclass(frozen=True)
@@ -111,6 +112,25 @@ class LocalMapMatchSet:
 
     def __len__(self) -> int:
         return len(self.point_ids)
+
+
+@dataclass(frozen=True)
+class LocalMapTrackingResult:
+    """Pose tracking result from matching a frame against the local map."""
+
+    success: bool
+    pose_wc: np.ndarray | None
+    pnp: PnPResult | None
+    matches: LocalMapMatchSet
+    message: str = ""
+
+    def __post_init__(self) -> None:
+        if self.pose_wc is None:
+            return
+        pose_wc = np.asarray(self.pose_wc, dtype=np.float64)
+        if pose_wc.shape != (4, 4):
+            raise ValueError("pose_wc must have shape 4x4")
+        object.__setattr__(self, "pose_wc", pose_wc)
 
 
 @dataclass
@@ -245,6 +265,52 @@ def match_local_map(
         frame_keypoint_indices=np.asarray(frame_keypoint_indices, dtype=np.int64),
         distances=np.asarray(distances, dtype=np.float64),
     )
+
+
+def estimate_frame_pose_from_local_map(
+    frame: Frame,
+    slam_map: Map,
+    camera: Camera,
+    *,
+    config: VisualOdometryConfig | None = None,
+    feature: str | None = None,
+    max_matches: int | None = None,
+) -> LocalMapTrackingResult:
+    """Estimate a frame world pose from local map matches and PnP RANSAC."""
+
+    config = VisualOdometryConfig() if config is None else config
+    matches = match_local_map(
+        frame,
+        slam_map,
+        feature=feature or config.matcher,
+        max_matches=max_matches,
+    )
+    if len(matches) < 4:
+        return LocalMapTrackingResult(
+            success=False,
+            pose_wc=None,
+            pnp=None,
+            matches=matches,
+            message=f"need at least 4 local map matches, got {len(matches)}",
+        )
+
+    try:
+        pnp = solve_pnp_ransac(matches.points_3d, matches.points_2d, camera.matrix)
+    except RuntimeError as exc:
+        return LocalMapTrackingResult(success=False, pose_wc=None, pnp=None, matches=matches, message=str(exc))
+
+    if pnp.inlier_count < config.min_pnp_inliers:
+        return LocalMapTrackingResult(
+            success=False,
+            pose_wc=None,
+            pnp=pnp,
+            matches=matches,
+            message=f"need at least {config.min_pnp_inliers} PnP inliers, got {pnp.inlier_count}",
+        )
+
+    transform_cw = make_transform(pnp.rotation, pnp.translation)
+    pose_wc = inverse_transform(transform_cw)
+    return LocalMapTrackingResult(success=True, pose_wc=pose_wc, pnp=pnp, matches=matches)
 
 
 def _empty_local_map_matches() -> LocalMapMatchSet:

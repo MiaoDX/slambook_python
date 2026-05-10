@@ -22,10 +22,12 @@ from slam.vo.visual_odometry import (
     Camera,
     Frame,
     LocalMapMatchSet,
+    LocalMapTrackingResult,
     Map,
     MapPoint,
     VisualOdometryConfig,
     chain_relative_pose,
+    estimate_frame_pose_from_local_map,
     match_local_map,
 )
 
@@ -36,6 +38,7 @@ __all__ = [
     "FundamentalResult",
     "Frame",
     "LocalMapMatchSet",
+    "LocalMapTrackingResult",
     "Map",
     "MapPoint",
     "PnPResult",
@@ -46,6 +49,7 @@ __all__ = [
     "build_image_pyramid",
     "chain_relative_pose",
     "estimate_essential",
+    "estimate_frame_pose_from_local_map",
     "estimate_fundamental",
     "estimate_two_view_pose",
     "project_points",
