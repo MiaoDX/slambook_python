@@ -8,7 +8,7 @@ from pathlib import Path
 import cv2
 import numpy as np
 
-from slam.vo.direct import photometric_residuals, refine_translation_2d
+from slam.vo.direct import direct_pose_residuals, photometric_residuals, refine_pose_se3, refine_translation_2d
 
 
 def _parse_args() -> argparse.Namespace:
@@ -26,6 +26,14 @@ def _parse_args() -> argparse.Namespace:
         action="store_true",
         help="Refine a single 2D translation from the reference points instead of only evaluating supplied current points.",
     )
+    parser.add_argument(
+        "--refine-pose",
+        action="store_true",
+        help="Refine a sparse SE3 warp using --depths and --intrinsics.",
+    )
+    parser.add_argument("--depths", type=Path, help="N-element .npy depth array for reference points.")
+    parser.add_argument("--intrinsics", type=float, nargs=4, metavar=("FX", "FY", "CX", "CY"))
+    parser.add_argument("--initial-transform", type=Path, help="Optional 4x4 .npy initial T_cur_ref for --refine-pose.")
     return parser.parse_args()
 
 
@@ -65,6 +73,45 @@ def main() -> None:
         print(f"refined residual rmse: {result.residual_rmse:.9f}")
         print(f"refinement evaluations: {result.nfev}")
         print(f"refinement success: {result.success}")
+
+    if args.refine_pose:
+        if args.depths is None or args.intrinsics is None:
+            raise SystemExit("--refine-pose requires --depths and --intrinsics")
+        depths = np.load(args.depths).astype(np.float64).reshape(-1)
+        if len(depths) != len(points):
+            raise SystemExit("--depths length must match --points row count")
+        fx, fy, cx, cy = args.intrinsics
+        camera_matrix = np.array([[fx, 0.0, cx], [0.0, fy, cy], [0.0, 0.0, 1.0]], dtype=np.float64)
+        initial_transform = (
+            np.load(args.initial_transform).astype(np.float64) if args.initial_transform is not None else np.eye(4)
+        )
+        initial_residuals, initial_valid = direct_pose_residuals(
+            reference,
+            current,
+            points[:, :2],
+            depths,
+            camera_matrix,
+            initial_transform,
+        )
+        initial_valid_residuals = initial_residuals[initial_valid]
+        result = refine_pose_se3(
+            reference,
+            current,
+            points[:, :2],
+            depths,
+            camera_matrix,
+            initial_transform_cur_ref=initial_transform,
+        )
+        print(f"initial SE3 valid residual count: {int(np.count_nonzero(initial_valid))}")
+        if len(initial_valid_residuals):
+            initial_rmse = float(np.sqrt(np.mean(initial_valid_residuals * initial_valid_residuals)))
+            print(f"initial SE3 residual rmse: {initial_rmse:.9f}")
+        print("refined T_cur_ref:")
+        print(result.transform_cur_ref)
+        print(f"refined SE3 valid residual count: {result.valid_count}")
+        print(f"refined SE3 residual rmse: {result.residual_rmse:.9f}")
+        print(f"SE3 refinement evaluations: {result.nfev}")
+        print(f"SE3 refinement success: {result.success}")
 
 
 if __name__ == "__main__":
