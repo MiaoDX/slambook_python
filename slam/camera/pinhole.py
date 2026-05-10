@@ -2,19 +2,55 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 import numpy as np
 
 
 @dataclass(frozen=True)
+class DistortionCoefficients:
+    """Brown-Conrady distortion coefficients in OpenCV order."""
+
+    k1: float = 0.0
+    k2: float = 0.0
+    p1: float = 0.0
+    p2: float = 0.0
+    k3: float = 0.0
+
+    def as_opencv(self) -> np.ndarray:
+        """Return `[k1, k2, p1, p2, k3]` coefficients for OpenCV calls."""
+
+        return np.array([self.k1, self.k2, self.p1, self.p2, self.k3], dtype=np.float64)
+
+    @property
+    def is_zero(self) -> bool:
+        return bool(np.allclose(self.as_opencv(), 0.0))
+
+    def distort_normalized(self, points: np.ndarray) -> np.ndarray:
+        """Apply radial/tangential distortion to normalized `Nx2` coordinates."""
+
+        points = _points2(points, name="points")
+        x = points[:, 0]
+        y = points[:, 1]
+        r2 = x * x + y * y
+        r4 = r2 * r2
+        r6 = r4 * r2
+        radial = 1.0 + self.k1 * r2 + self.k2 * r4 + self.k3 * r6
+        distorted = np.empty_like(points, dtype=np.float64)
+        distorted[:, 0] = x * radial + 2.0 * self.p1 * x * y + self.p2 * (r2 + 2.0 * x * x)
+        distorted[:, 1] = y * radial + self.p1 * (r2 + 2.0 * y * y) + 2.0 * self.p2 * x * y
+        return distorted
+
+
+@dataclass(frozen=True)
 class CameraIntrinsics:
-    """Pinhole camera intrinsics with no distortion model."""
+    """Pinhole camera intrinsics with optional distortion coefficients."""
 
     fx: float
     fy: float
     cx: float
     cy: float
+    distortion: DistortionCoefficients = field(default_factory=DistortionCoefficients)
 
     @classmethod
     def from_matrix(cls, camera_matrix: np.ndarray) -> "CameraIntrinsics":
@@ -51,17 +87,17 @@ class CameraIntrinsics:
         points[:, 1] = (pixels[:, 1] - self.cy) / self.fy * depths
         return points
 
-    def camera_to_pixel(self, points: np.ndarray) -> np.ndarray:
+    def camera_to_pixel(self, points: np.ndarray, *, apply_distortion: bool = False) -> np.ndarray:
         """Project `Nx3` camera-frame points into pixel coordinates."""
 
         points = _points3(points, name="points")
         if np.any(points[:, 2] == 0):
             raise ValueError("cannot project points with zero depth")
 
-        pixels = np.empty((len(points), 2), dtype=np.float64)
-        pixels[:, 0] = self.fx * points[:, 0] / points[:, 2] + self.cx
-        pixels[:, 1] = self.fy * points[:, 1] / points[:, 2] + self.cy
-        return pixels
+        normalized = points[:, :2] / points[:, 2:3]
+        if apply_distortion:
+            normalized = self.distortion.distort_normalized(normalized)
+        return self.normalized_to_pixel(normalized)
 
     def normalized_to_pixel(self, points: np.ndarray) -> np.ndarray:
         """Project normalized camera coordinates `Nx2` into pixels."""
