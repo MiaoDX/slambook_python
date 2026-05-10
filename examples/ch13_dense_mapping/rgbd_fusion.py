@@ -11,7 +11,13 @@ import numpy as np
 from slam.camera.pinhole import CameraIntrinsics
 from slam.mapping.pointcloud import estimate_normals, voxel_downsample, write_ply_ascii
 from slam.mapping.rgbd import rgbd_to_point_cloud
-from slam.viz import OptionalVisualizationDependencyError, log_points_rerun, require_rerun
+from slam.viz import (
+    OptionalVisualizationDependencyError,
+    log_points_rerun,
+    reconstruct_mesh_poisson,
+    require_rerun,
+    write_triangle_mesh_open3d,
+)
 
 
 def _parse_args() -> argparse.Namespace:
@@ -25,6 +31,8 @@ def _parse_args() -> argparse.Namespace:
     parser.add_argument("--voxel-size", type=float, help="Optional voxel size for centroid downsampling.")
     parser.add_argument("--estimate-normals", action="store_true", help="Estimate PCA normals before writing PLY.")
     parser.add_argument("--normal-k", type=int, default=16, help="Neighbor count for --estimate-normals.")
+    parser.add_argument("--mesh-output", type=Path, help="Optional Open3D Poisson mesh output path.")
+    parser.add_argument("--poisson-depth", type=int, default=8, help="Poisson reconstruction depth for --mesh-output.")
     parser.add_argument("--rerun", action="store_true", help="Log the output point cloud to Rerun.")
     parser.add_argument("--rerun-entity", default="world/rgbd_cloud", help="Rerun entity path for --rerun.")
     return parser.parse_args()
@@ -65,6 +73,17 @@ def main() -> None:
         points, colors = voxel_downsample(points, colors, voxel_size=args.voxel_size)
     normals = estimate_normals(points, k=args.normal_k, viewpoint=np.zeros(3)) if args.estimate_normals else None
     write_ply_ascii(args.output, points, colors, normals)
+    if args.mesh_output is not None:
+        try:
+            mesh, densities = reconstruct_mesh_poisson(
+                points,
+                colors,
+                normals,
+                depth=args.poisson_depth,
+            )
+            write_triangle_mesh_open3d(args.mesh_output, mesh)
+        except OptionalVisualizationDependencyError as exc:
+            raise SystemExit(str(exc)) from exc
     if args.rerun:
         try:
             rr = require_rerun()
@@ -83,6 +102,10 @@ def main() -> None:
     if args.estimate_normals:
         print(f"normal count: {len(normals)}")
         print(f"normal k: {args.normal_k}")
+    if args.mesh_output is not None:
+        print(f"mesh output: {args.mesh_output}")
+        print(f"mesh density count: {len(densities)}")
+        print(f"poisson depth: {args.poisson_depth}")
     if args.rerun:
         print(f"logged Rerun point cloud: {args.rerun_entity}")
     print(f"depth scale: {args.depth_scale}")
