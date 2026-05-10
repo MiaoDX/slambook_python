@@ -8,6 +8,7 @@ from pathlib import Path
 import numpy as np
 
 from slam.camera.pinhole import CameraIntrinsics
+from slam.features.opencv_features import match_descriptors
 from slam.geometry.transforms import inverse_transform, make_transform
 
 
@@ -81,6 +82,35 @@ class MapPoint:
 
     def remove_observation(self, frame_id: int) -> None:
         self.observations.pop(int(frame_id), None)
+
+
+@dataclass(frozen=True)
+class LocalMapMatchSet:
+    """3D/2D correspondences between map points and one frame."""
+
+    point_ids: np.ndarray
+    points_3d: np.ndarray
+    points_2d: np.ndarray
+    frame_keypoint_indices: np.ndarray
+    distances: np.ndarray
+
+    def __post_init__(self) -> None:
+        point_ids = np.asarray(self.point_ids, dtype=np.int64).reshape(-1)
+        points_3d = np.asarray(self.points_3d, dtype=np.float64).reshape(-1, 3)
+        points_2d = np.asarray(self.points_2d, dtype=np.float64).reshape(-1, 2)
+        frame_keypoint_indices = np.asarray(self.frame_keypoint_indices, dtype=np.int64).reshape(-1)
+        distances = np.asarray(self.distances, dtype=np.float64).reshape(-1)
+        sizes = {len(point_ids), len(points_3d), len(points_2d), len(frame_keypoint_indices), len(distances)}
+        if len(sizes) != 1:
+            raise ValueError("local map match arrays must have the same length")
+        object.__setattr__(self, "point_ids", point_ids)
+        object.__setattr__(self, "points_3d", points_3d)
+        object.__setattr__(self, "points_2d", points_2d)
+        object.__setattr__(self, "frame_keypoint_indices", frame_keypoint_indices)
+        object.__setattr__(self, "distances", distances)
+
+    def __len__(self) -> int:
+        return len(self.point_ids)
 
 
 @dataclass
@@ -158,6 +188,73 @@ def chain_relative_pose(
     transform_10 = make_transform(rotation_10, np.asarray(translation_10, dtype=np.float64).reshape(3) * translation_scale)
     transform_01 = inverse_transform(transform_10)
     return previous_pose_wc @ transform_01
+
+
+def match_local_map(
+    frame: Frame,
+    slam_map: Map,
+    *,
+    feature: str = "orb",
+    max_matches: int | None = None,
+) -> LocalMapMatchSet:
+    """Match frame descriptors against map point descriptors for PnP tracking."""
+
+    if frame.keypoints is None or frame.descriptors is None:
+        return _empty_local_map_matches()
+
+    point_ids: list[int] = []
+    descriptor_rows = []
+    for point_id, point in sorted(slam_map.points.items()):
+        if point.descriptor is None:
+            continue
+        point_ids.append(point_id)
+        descriptor_rows.append(np.asarray(point.descriptor).reshape(1, -1))
+
+    if not descriptor_rows:
+        return _empty_local_map_matches()
+
+    map_descriptors = np.vstack(descriptor_rows)
+    frame_descriptors = np.asarray(frame.descriptors)
+    if map_descriptors.dtype != frame_descriptors.dtype:
+        map_descriptors = map_descriptors.astype(frame_descriptors.dtype, copy=False)
+
+    matches = match_descriptors(map_descriptors, frame_descriptors, feature=feature)
+    if max_matches is not None:
+        matches = matches[:max_matches]
+    if not matches:
+        return _empty_local_map_matches()
+
+    matched_point_ids = []
+    points_3d = []
+    points_2d = []
+    frame_keypoint_indices = []
+    distances = []
+    for match in matches:
+        point_id = point_ids[match.queryIdx]
+        frame_index = int(match.trainIdx)
+        matched_point_ids.append(point_id)
+        points_3d.append(slam_map.points[point_id].position_w)
+        points_2d.append(frame.keypoints[frame_index])
+        frame_keypoint_indices.append(frame_index)
+        distances.append(float(match.distance))
+
+    return LocalMapMatchSet(
+        point_ids=np.asarray(matched_point_ids, dtype=np.int64),
+        points_3d=np.asarray(points_3d, dtype=np.float64),
+        points_2d=np.asarray(points_2d, dtype=np.float64),
+        frame_keypoint_indices=np.asarray(frame_keypoint_indices, dtype=np.int64),
+        distances=np.asarray(distances, dtype=np.float64),
+    )
+
+
+def _empty_local_map_matches() -> LocalMapMatchSet:
+    return LocalMapMatchSet(
+        point_ids=np.empty(0, dtype=np.int64),
+        points_3d=np.empty((0, 3), dtype=np.float64),
+        points_2d=np.empty((0, 2), dtype=np.float64),
+        frame_keypoint_indices=np.empty(0, dtype=np.int64),
+        distances=np.empty(0, dtype=np.float64),
+    )
 
 
 def _points2(points: np.ndarray, *, name: str) -> np.ndarray:

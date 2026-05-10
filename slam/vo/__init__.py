@@ -18,7 +18,16 @@ from slam.vo.two_view import (
     estimate_two_view_pose,
     recover_relative_pose,
 )
-from slam.vo.visual_odometry import Camera, Frame, Map, MapPoint, VisualOdometryConfig, chain_relative_pose
+from slam.vo.visual_odometry import (
+    Camera,
+    Frame,
+    LocalMapMatchSet,
+    Map,
+    MapPoint,
+    VisualOdometryConfig,
+    chain_relative_pose,
+    match_local_map,
+)
 
 __all__ = [
     "Camera",
@@ -26,6 +35,7 @@ __all__ = [
     "EssentialResult",
     "FundamentalResult",
     "Frame",
+    "LocalMapMatchSet",
     "Map",
     "MapPoint",
     "PnPResult",
@@ -42,5 +52,6 @@ __all__ = [
     "photometric_residuals",
     "recover_relative_pose",
     "refine_translation_2d",
+    "match_local_map",
     "solve_pnp",
 ]

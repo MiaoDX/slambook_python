@@ -2,7 +2,16 @@ import numpy as np
 
 from slam.camera.pinhole import CameraIntrinsics
 from slam.geometry.transforms import make_transform
-from slam.vo.visual_odometry import Camera, Frame, Map, MapPoint, VisualOdometryConfig, chain_relative_pose
+from slam.vo.visual_odometry import (
+    Camera,
+    Frame,
+    LocalMapMatchSet,
+    Map,
+    MapPoint,
+    VisualOdometryConfig,
+    chain_relative_pose,
+    match_local_map,
+)
 
 
 def test_camera_wrapper_projects_with_intrinsics():
@@ -47,6 +56,58 @@ def test_map_inserts_keyframes_and_landmark_observations():
 
     assert slam_map.keyframes[1].is_keyframe
     assert slam_map.points[2].observed_times == 1
+
+
+def test_match_local_map_returns_pnp_correspondences():
+    zero_descriptor = np.zeros(32, dtype=np.uint8)
+    full_descriptor = np.full(32, 255, dtype=np.uint8)
+    slam_map = Map(
+        points={
+            7: MapPoint(id=7, position_w=np.array([1.0, 0.0, 4.0]), descriptor=zero_descriptor),
+            8: MapPoint(id=8, position_w=np.array([0.0, 1.0, 5.0]), descriptor=full_descriptor),
+        }
+    )
+    frame = Frame(
+        id=2,
+        timestamp=0.1,
+        image=np.zeros((8, 8), dtype=np.uint8),
+        keypoints=np.array([[40.0, 50.0], [10.0, 20.0]]),
+        descriptors=np.vstack([full_descriptor, zero_descriptor]),
+    )
+
+    matches = match_local_map(frame, slam_map)
+    pixel_by_point_id = {point_id: pixel for point_id, pixel in zip(matches.point_ids, matches.points_2d)}
+
+    assert len(matches) == 2
+    np.testing.assert_allclose(pixel_by_point_id[7], [10.0, 20.0])
+    np.testing.assert_allclose(pixel_by_point_id[8], [40.0, 50.0])
+    assert np.all(matches.distances == 0.0)
+
+
+def test_match_local_map_returns_empty_without_descriptors():
+    slam_map = Map(points={1: MapPoint(id=1, position_w=np.array([0.0, 0.0, 1.0]))})
+    frame = Frame(id=2, timestamp=0.0, image=np.zeros((4, 4), dtype=np.uint8))
+
+    matches = match_local_map(frame, slam_map)
+
+    assert len(matches) == 0
+    assert matches.points_3d.shape == (0, 3)
+    assert matches.points_2d.shape == (0, 2)
+
+
+def test_local_map_match_set_rejects_mismatched_lengths():
+    try:
+        LocalMapMatchSet(
+            point_ids=np.array([1, 2]),
+            points_3d=np.zeros((1, 3)),
+            points_2d=np.zeros((1, 2)),
+            frame_keypoint_indices=np.array([0]),
+            distances=np.array([0.0]),
+        )
+    except ValueError as exc:
+        assert "same length" in str(exc)
+    else:
+        raise AssertionError("expected ValueError")
 
 
 def test_visual_odometry_config_defaults_are_core_only():
