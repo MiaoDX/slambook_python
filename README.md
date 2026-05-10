@@ -1,9 +1,9 @@
 Python implementations of selected projects and examples from
 [slambook](https://github.com/gaoxiang12/slambook).
 
-This repository is being migrated into a teaching-first Python package. The
-legacy root scripts remain in place while new importable modules and examples
-are added under `slam/` and `examples/`.
+This repository contains a teaching-first Python package for the core slambook
+concepts. The legacy root scripts remain in place while the migrated importable
+modules and examples live under `slam/` and `examples/`.
 
 ## Install
 
@@ -32,7 +32,7 @@ pip install -e .[all]
 
 Importing `slam` does not require optional modern backends.
 
-## Current Migration Status
+## Migration Status
 
 See `docs/status.md` for the chapter-by-chapter status table.
 See `docs/datasets.md` for expected local dataset layouts.
