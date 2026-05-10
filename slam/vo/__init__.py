@@ -19,6 +19,7 @@ from slam.vo.pnp import (
     solve_pnp,
     solve_pnp_ransac,
 )
+from slam.vo.pycolmap_backend import estimate_absolute_pose_pycolmap
 from slam.vo.two_view import (
     EssentialResult,
     FundamentalResult,
@@ -68,6 +69,7 @@ __all__ = [
     "create_frame",
     "direct_pose_residuals",
     "estimate_essential",
+    "estimate_absolute_pose_pycolmap",
     "estimate_frame_pose_from_local_map",
     "estimate_fundamental",
     "extract_frame_features",
