@@ -51,6 +51,7 @@ Importing `slam` does not require optional modern backends.
 See `docs/status.md` for the chapter-by-chapter status table.
 See `docs/datasets.md` for expected local dataset layouts.
 See `docs/validation.md` for the latest local validation notes.
+See `CONTEXT.md` for the migration glossary and notation conventions.
 
 Representative migrated examples:
 
@@ -70,6 +71,27 @@ python examples/ch13_dense_mapping/rgbd_fusion.py \
   --pose-file data/slambook/ch13/pose.txt \
   --intrinsics FX FY CX CY \
   --output outputs/ch13_cloud.ply
+```
+
+Validation and benchmark helpers live under `examples/reference/`:
+
+```bash
+uv run --extra core --extra test --frozen python examples/reference/validate_upstream_samples.py \
+  --upstream-root data/slambook-upstream \
+  --work-dir /tmp/slambook-python-validation
+
+uv run --extra core --extra test --frozen python examples/reference/benchmark_report.py \
+  pose-graph \
+  --g2o examples/ch11_pose_graph/tiny_pose_graph.g2o \
+  --solve \
+  --output /tmp/slambook-python-validation/pose_graph_report.json
+```
+
+Optional backend integration checks are kept outside the default pytest path:
+
+```bash
+uv sync --all-extras --frozen
+uv run --all-extras --frozen python -m pytest tests_optional
 ```
 
 ## Legacy Scripts

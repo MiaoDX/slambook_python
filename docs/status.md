@@ -20,7 +20,8 @@ Status terms:
 | ch12 | Loop closure | Baseline complete | OpenCV descriptors/BoW | FAISS/hloc-style comparison | OpenCV descriptor builder, BoW vocabulary training, NumPy/FAISS retrieval, temporal filtering, and CLIs added |
 | ch13 | Dense mapping | Baseline complete | Open3D-compatible arrays/PLY/occupancy | Open3D/Rerun | RGB-D arrays, known-pose fusion, voxel occupancy export, voxel downsampling, normal estimation, known-pose monocular depth estimation, optional Open3D mesh reconstruction, PLY output/downsample/Rerun CLI, and optional viz guards added |
 
-The migration baseline is complete for the planned chapter surface. Remaining
-work is follow-on hardening: validating examples on full real datasets and
-expanding optional backend tests on machines where GTSAM, PyCOLMAP, LightGlue,
-FAISS, Open3D, and Rerun are installed.
+The migration baseline is complete for the planned chapter surface. Follow-on
+hardening now includes an upstream sample validation runner, JSON benchmark
+reports for trajectory/BA/pose-graph quality checks, and an optional backend
+integration suite under `tests_optional/` for machines with the all-extras
+environment installed.
