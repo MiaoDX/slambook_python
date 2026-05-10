@@ -5,6 +5,37 @@ This repository contains a teaching-first Python package for the core slambook
 concepts. The legacy root scripts remain in place while the migrated importable
 modules and examples live under `slam/` and `examples/`.
 
+## Beginner Path
+
+If you are using this repo as a Python-first companion to slambook, start with
+the core environment and the chapters that need no large datasets:
+
+```bash
+uv sync --extra core --extra test --frozen
+uv run --extra core --extra test --frozen python -m pytest
+uv run --extra core --extra test --frozen python examples/ch3_geometry/transforms.py
+uv run --extra core --extra test --frozen python examples/ch4_lie/exp_log.py
+uv run --extra core --extra test --frozen python examples/ch6_optimization/curve_fitting.py
+uv run --extra core --extra test --frozen python examples/ch10_bundle_adjustment/scipy_bal.py \
+  --bal examples/ch10_bundle_adjustment/tiny_bal.txt \
+  --fix-cameras
+uv run --extra core --extra test --frozen python examples/ch11_pose_graph/optimize_pose_graph.py \
+  --g2o examples/ch11_pose_graph/tiny_pose_graph.g2o \
+  --solve
+```
+
+Then add slambook sample images under `data/slambook/` and continue with the
+camera, visual odometry, loop closure, and dense mapping examples listed below.
+Large datasets are intentionally not committed; see `docs/datasets.md` for the
+expected layouts.
+
+For mainland China, use the same commands with a uv mirror:
+
+```bash
+UV_DEFAULT_INDEX=https://pypi.tuna.tsinghua.edu.cn/simple uv sync --extra core --extra test --frozen
+UV_DEFAULT_INDEX=https://pypi.tuna.tsinghua.edu.cn/simple uv run --extra core --extra test --frozen python -m pytest
+```
+
 ## Install
 
 Core educational dependencies:
@@ -92,6 +123,13 @@ Optional backend integration checks are kept outside the default pytest path:
 ```bash
 uv sync --all-extras --frozen
 uv run --all-extras --frozen python -m pytest tests_optional
+```
+
+With a uv mirror:
+
+```bash
+UV_DEFAULT_INDEX=https://pypi.tuna.tsinghua.edu.cn/simple uv sync --all-extras --frozen
+UV_DEFAULT_INDEX=https://pypi.tuna.tsinghua.edu.cn/simple uv run --all-extras --frozen python -m pytest tests_optional
 ```
 
 ## Legacy Scripts
