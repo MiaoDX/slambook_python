@@ -89,7 +89,52 @@ def voxel_downsample(
     return points_out, colors_out
 
 
-def write_ply_ascii(path: str | Path, points: np.ndarray, colors: np.ndarray | None = None) -> None:
+def estimate_normals(
+    points: np.ndarray,
+    *,
+    k: int = 16,
+    viewpoint: np.ndarray | None = None,
+) -> np.ndarray:
+    """Estimate point normals with local PCA over `k` nearest neighbors."""
+
+    if k < 3:
+        raise ValueError("k must be at least 3")
+    points = np.asarray(points, dtype=np.float64)
+    if points.ndim != 2 or points.shape[1] != 3:
+        raise ValueError("points must be an Nx3 array")
+    if len(points) == 0:
+        return np.empty((0, 3), dtype=np.float64)
+    if len(points) < 3:
+        raise ValueError("normal estimation requires at least 3 points")
+    if viewpoint is not None:
+        viewpoint = np.asarray(viewpoint, dtype=np.float64).reshape(3)
+
+    neighbor_count = min(k, len(points))
+    normals = np.empty_like(points, dtype=np.float64)
+    for index, point in enumerate(points):
+        distances = np.sum((points - point) ** 2, axis=1)
+        neighbor_indices = np.argsort(distances)[:neighbor_count]
+        neighbors = points[neighbor_indices]
+        centered = neighbors - neighbors.mean(axis=0)
+        covariance = centered.T @ centered / len(neighbors)
+        _, eigenvectors = np.linalg.eigh(covariance)
+        normal = eigenvectors[:, 0]
+        if viewpoint is None:
+            dominant_axis = int(np.argmax(np.abs(normal)))
+            if normal[dominant_axis] < 0.0:
+                normal = -normal
+        elif float(normal @ (viewpoint - point)) < 0.0:
+            normal = -normal
+        normals[index] = normal / np.linalg.norm(normal)
+    return normals
+
+
+def write_ply_ascii(
+    path: str | Path,
+    points: np.ndarray,
+    colors: np.ndarray | None = None,
+    normals: np.ndarray | None = None,
+) -> None:
     """Write an ASCII PLY point cloud.
 
     `points` must be `Nx3`. `colors`, when provided, must be `Nx3` RGB values
@@ -105,6 +150,10 @@ def write_ply_ascii(path: str | Path, points: np.ndarray, colors: np.ndarray | N
         if colors.ndim != 2 or colors.shape[1] != 3 or len(colors) != len(points):
             raise ValueError("colors must be an Nx3 array with one color per point")
         colors = np.clip(colors, 0, 255).astype(np.uint8)
+    if normals is not None:
+        normals = np.asarray(normals, dtype=np.float64)
+        if normals.ndim != 2 or normals.shape[1] != 3 or len(normals) != len(points):
+            raise ValueError("normals must be an Nx3 array with one normal per point")
 
     path = Path(path)
     path.parent.mkdir(parents=True, exist_ok=True)
@@ -116,6 +165,14 @@ def write_ply_ascii(path: str | Path, points: np.ndarray, colors: np.ndarray | N
         "property float y",
         "property float z",
     ]
+    if normals is not None:
+        lines.extend(
+            [
+                "property float nx",
+                "property float ny",
+                "property float nz",
+            ]
+        )
     if colors is not None:
         lines.extend(
             [
@@ -127,12 +184,12 @@ def write_ply_ascii(path: str | Path, points: np.ndarray, colors: np.ndarray | N
     lines.append("end_header")
 
     for index, point in enumerate(points):
-        if colors is None:
-            lines.append(f"{point[0]:.9f} {point[1]:.9f} {point[2]:.9f}")
-        else:
+        values = [f"{point[0]:.9f}", f"{point[1]:.9f}", f"{point[2]:.9f}"]
+        if normals is not None:
+            normal = normals[index]
+            values.extend([f"{normal[0]:.9f}", f"{normal[1]:.9f}", f"{normal[2]:.9f}"])
+        if colors is not None:
             color = colors[index]
-            lines.append(
-                f"{point[0]:.9f} {point[1]:.9f} {point[2]:.9f} "
-                f"{int(color[0])} {int(color[1])} {int(color[2])}"
-            )
+            values.extend([str(int(color[0])), str(int(color[1])), str(int(color[2]))])
+        lines.append(" ".join(values))
     path.write_text("\n".join(lines) + "\n", encoding="utf-8")
