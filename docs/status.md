@@ -13,4 +13,4 @@
 | ch10 | Bundle adjustment | In progress | SciPy | GTSAM/PyCOLMAP | BAL parser, `scipy_ba` module, CLI, and optional backend guards added |
 | ch11 | Pose graph | In progress | SciPy small graph | GTSAM | g2o parser, SciPy optimizer, CLI, and optional GTSAM guard added |
 | ch12 | Loop closure | In progress | OpenCV descriptors | FAISS/hloc | OpenCV descriptor builder, retrieval, temporal filtering, and CLIs added |
-| ch13 | Dense mapping | In progress | Open3D | Rerun | RGB-D arrays, known-pose fusion, voxel downsampling, PLY output, CLI, and optional viz guards added |
+| ch13 | Dense mapping | In progress | Open3D | Rerun | RGB-D arrays, known-pose fusion, voxel downsampling, PLY output/downsample CLI, and optional viz guards added |

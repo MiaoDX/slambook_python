@@ -8,7 +8,7 @@ from pathlib import Path
 import cv2
 
 from slam.camera.pinhole import CameraIntrinsics
-from slam.mapping.pointcloud import write_ply_ascii
+from slam.mapping.pointcloud import voxel_downsample, write_ply_ascii
 from slam.mapping.rgbd import rgbd_to_point_cloud
 
 
@@ -20,6 +20,7 @@ def _parse_args() -> argparse.Namespace:
     parser.add_argument("--intrinsics", required=True, type=float, nargs=4, metavar=("FX", "FY", "CX", "CY"))
     parser.add_argument("--depth-scale", type=float, default=1000.0)
     parser.add_argument("--depth-trunc", type=float)
+    parser.add_argument("--voxel-size", type=float, help="Optional voxel size for centroid downsampling.")
     return parser.parse_args()
 
 
@@ -52,12 +53,19 @@ def main() -> None:
         depth_scale=args.depth_scale,
         depth_trunc=args.depth_trunc,
     )
-    write_ply_ascii(args.output, cloud.points, cloud.colors)
+    points = cloud.points
+    colors = cloud.colors
+    if args.voxel_size is not None:
+        points, colors = voxel_downsample(points, colors, voxel_size=args.voxel_size)
+    write_ply_ascii(args.output, points, colors)
 
     print(f"color: {args.color}")
     print(f"depth: {args.depth}")
     print(f"output: {args.output}")
     print(f"point count: {len(cloud.points)}")
+    if args.voxel_size is not None:
+        print(f"downsampled point count: {len(points)}")
+        print(f"voxel size: {args.voxel_size}")
     print(f"depth scale: {args.depth_scale}")
     if args.depth_trunc is not None:
         print(f"depth truncation: {args.depth_trunc}")
