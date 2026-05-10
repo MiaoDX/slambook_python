@@ -46,6 +46,24 @@ python examples/ch7_feature_vo/pose_estimation_2d2d.py \
   --matcher orb
 ```
 
+## Legacy Root Scripts
+
+The original root-level scripts are kept as the legacy baseline during the
+migration:
+
+- `pose_estimation_2d2d.py`
+- `pose_estimation_3d2d.py`
+- `flann_based_matcher.py`
+- `ransac_test.py`
+- `simStereoCamera.py`
+- `testRefine.py`
+- `utils.py`
+
+New code should use importable modules under `slam/` and runnable examples under
+`examples/`. Once replacement examples are stable across the relevant chapters,
+the root scripts can be converted into wrappers or moved under a documented
+`legacy/` directory.
+
 
 ## SOME NOTES:
 
