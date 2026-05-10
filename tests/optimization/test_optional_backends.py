@@ -7,7 +7,7 @@ import pytest
 
 from slam.optimization.gtsam_backend import OptionalBackendDependencyError, optimize_pose_graph_gtsam, require_gtsam
 from slam.optimization.pose_graph import PoseGraph, PoseGraphEdge, PoseGraphVertex
-from slam.optimization.pycolmap_backend import require_pycolmap
+from slam.optimization.pycolmap_backend import require_pycolmap, run_pycolmap_reconstruction
 
 
 def test_require_gtsam_has_backend_install_guidance(monkeypatch):
@@ -60,6 +60,58 @@ def test_optimize_pose_graph_gtsam_uses_optional_backend(monkeypatch):
     np.testing.assert_allclose(result.graph.vertices[1].transform_wi[:3, 3], [1.0, 0.0, 0.0])
     assert fake_gtsam.last_params.max_iterations == 5
     assert len(fake_gtsam.last_graph.factors) == 2
+
+
+def test_run_pycolmap_reconstruction_uses_reference_pipeline(monkeypatch, tmp_path):
+    fake_pycolmap = _install_fake_pycolmap(monkeypatch)
+    image_dir = tmp_path / "images"
+    image_dir.mkdir()
+    output_dir = tmp_path / "pycolmap"
+
+    result = run_pycolmap_reconstruction(
+        image_dir,
+        output_dir,
+        image_names=["0001.png"],
+        extraction_options={"sift": {"max_num_features": 512}},
+        matching_method="sequential",
+        matching_options={"sift": {"max_ratio": 0.8}},
+        mapper_options={"min_num_matches": 12},
+        device="cpu",
+    )
+
+    assert result.reconstruction_count == 1
+    assert result.reconstruction_ids == (2,)
+    assert result.database_path == output_dir / "database.db"
+    assert result.reconstruction_paths == (output_dir,)
+    assert result.summaries == ("fake reconstruction",)
+    assert fake_pycolmap.calls == [
+        (
+            "extract_features",
+            output_dir / "database.db",
+            image_dir,
+            {
+                "image_names": ("0001.png",),
+                "extraction_options": {"sift": {"max_num_features": 512}},
+                "device": "cpu",
+            },
+        ),
+        (
+            "match_sequential",
+            output_dir / "database.db",
+            {
+                "matching_options": {"sift": {"max_ratio": 0.8}},
+                "device": "cpu",
+            },
+        ),
+        (
+            "incremental_mapping",
+            output_dir / "database.db",
+            image_dir,
+            output_dir,
+            {"options": {"min_num_matches": 12}},
+        ),
+    ]
+    assert result.reconstructions[0].written_path == output_dir
 
 
 def _install_fake_gtsam(monkeypatch):
@@ -149,4 +201,35 @@ def _install_fake_gtsam(monkeypatch):
         Constrained=types.SimpleNamespace(All=lambda size: ("constrained", size)),
     )
     monkeypatch.setitem(sys.modules, "gtsam", fake)
+    return fake
+
+
+def _install_fake_pycolmap(monkeypatch):
+    fake = types.ModuleType("pycolmap")
+    fake.calls = []
+
+    class Reconstruction:
+        def __init__(self):
+            self.written_path = None
+
+        def write(self, path):
+            self.written_path = path
+
+        def summary(self):
+            return "fake reconstruction"
+
+    def extract_features(database_path, image_dir, **kwargs):
+        fake.calls.append(("extract_features", database_path, image_dir, kwargs))
+
+    def match_sequential(database_path, **kwargs):
+        fake.calls.append(("match_sequential", database_path, kwargs))
+
+    def incremental_mapping(database_path, image_dir, output_dir, **kwargs):
+        fake.calls.append(("incremental_mapping", database_path, image_dir, output_dir, kwargs))
+        return {2: Reconstruction()}
+
+    fake.extract_features = extract_features
+    fake.match_sequential = match_sequential
+    fake.incremental_mapping = incremental_mapping
+    monkeypatch.setitem(sys.modules, "pycolmap", fake)
     return fake

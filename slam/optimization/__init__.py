@@ -34,7 +34,11 @@ from slam.optimization.pose_graph import (
     total_edge_error,
     unpack_pose_graph_parameters,
 )
-from slam.optimization.pycolmap_backend import require_pycolmap, run_pycolmap_reconstruction
+from slam.optimization.pycolmap_backend import (
+    PyCOLMAPReconstructionResult,
+    require_pycolmap,
+    run_pycolmap_reconstruction,
+)
 
 __all__ = [
     "BALObservation",
@@ -45,6 +49,7 @@ __all__ = [
     "PoseGraphEdge",
     "PoseGraphOptimizationResult",
     "PoseGraphVertex",
+    "PyCOLMAPReconstructionResult",
     "OptionalBackendDependencyError",
     "bal_jacobian_sparsity",
     "exponential_curve",
