@@ -21,7 +21,6 @@ Status terms:
 | ch13 | Dense mapping | Baseline complete | Open3D-compatible arrays/PLY | Open3D/Rerun | RGB-D arrays, known-pose fusion, voxel downsampling, normal estimation, optional Open3D mesh reconstruction, PLY output/downsample/Rerun CLI, and optional viz guards added |
 
 The migration baseline is complete for the planned chapter surface. Remaining
-work is follow-on hardening: validating examples on full real datasets,
-deciding whether to convert legacy root scripts into wrappers or move them to a
-`legacy/` directory, and expanding optional backend tests on machines where
-GTSAM, PyCOLMAP, LightGlue, FAISS, Open3D, and Rerun are installed.
+work is follow-on hardening: validating examples on full real datasets and
+expanding optional backend tests on machines where GTSAM, PyCOLMAP, LightGlue,
+FAISS, Open3D, and Rerun are installed.

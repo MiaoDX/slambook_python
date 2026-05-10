@@ -13,7 +13,7 @@ def check_solutions(fp, sp, K, R1, R2, t):
     points are positive, then that is our solution.
     More details can be found in the paper,
     David Nister, An efficient solution to the five-point relative pose problem.
-    TODO: Need to take care of points that are far away
+    This legacy helper clips points beyond a fixed distance threshold.
     Args:
         fp: Set of matched points from first image
         sp: Set of matched points from second image

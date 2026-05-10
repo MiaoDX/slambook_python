@@ -70,23 +70,21 @@ python examples/ch13_dense_mapping/rgbd_fusion.py \
   --output outputs/ch13_cloud.ply
 ```
 
-## Legacy Root Scripts
+## Legacy Scripts
 
-The original root-level scripts are kept as the legacy baseline during the
-migration:
+The original root-level scripts are kept under `legacy/` as the historical
+baseline during the migration:
 
-- `pose_estimation_2d2d.py`
-- `pose_estimation_3d2d.py`
-- `flann_based_matcher.py`
-- `ransac_test.py`
-- `simStereoCamera.py`
-- `testRefine.py`
-- `utils.py`
+- `legacy/pose_estimation_2d2d.py`
+- `legacy/pose_estimation_3d2d.py`
+- `legacy/flann_based_matcher.py`
+- `legacy/ransac_test.py`
+- `legacy/simStereoCamera.py`
+- `legacy/testRefine.py`
+- `legacy/utils.py`
 
 New code should use importable modules under `slam/` and runnable examples under
-`examples/`. Once replacement examples are stable across the relevant chapters,
-the root scripts can be converted into wrappers or moved under a documented
-`legacy/` directory.
+`examples/`.
 
 
 ## SOME NOTES:
