@@ -12,7 +12,7 @@ from slam.viz.open3d_viz import (
     require_open3d,
     write_triangle_mesh_open3d,
 )
-from slam.viz.rerun_viz import log_trajectory_rerun, require_rerun
+from slam.viz.rerun_viz import log_matches_rerun, log_trajectory_rerun, require_rerun
 
 
 def test_require_open3d_has_install_guidance(monkeypatch):
@@ -91,6 +91,47 @@ def test_log_trajectory_rerun_uses_line_strip(monkeypatch):
     assert calls[0][0] == "world/trajectory"
     np.testing.assert_allclose(calls[0][1].strips[0], [[0.0, 0.0, 0.0], [1.0, 2.0, 3.0]])
     assert calls[0][1].kwargs == {"colors": [0, 128, 255], "radii": 0.02}
+
+
+def test_log_matches_rerun_logs_points_and_line_strips(monkeypatch):
+    calls = []
+
+    class FakePoints2D:
+        def __init__(self, points, **kwargs):
+            self.points = points
+            self.kwargs = kwargs
+
+    class FakeLineStrips2D:
+        def __init__(self, strips, **kwargs):
+            self.strips = strips
+            self.kwargs = kwargs
+
+    fake_rerun = types.SimpleNamespace(
+        Points2D=FakePoints2D,
+        LineStrips2D=FakeLineStrips2D,
+        log=lambda entity_path, archetype: calls.append((entity_path, archetype)),
+    )
+    monkeypatch.setitem(sys.modules, "rerun", fake_rerun)
+    points0 = np.array([[0.0, 1.0], [2.0, 3.0]])
+    points1 = np.array([[10.0, 11.0], [12.0, 13.0]])
+
+    log_matches_rerun("world/matches/orb", points0, points1, color=[0, 128, 255], radius=2.0)
+
+    assert [call[0] for call in calls] == [
+        "world/matches/orb/points0",
+        "world/matches/orb/points1",
+        "world/matches/orb/lines",
+    ]
+    np.testing.assert_allclose(calls[0][1].points, points0)
+    np.testing.assert_allclose(calls[1][1].points, points1)
+    np.testing.assert_allclose(calls[2][1].strips, np.stack([points0, points1], axis=1))
+    assert calls[2][1].kwargs == {"colors": [0, 128, 255], "radii": 2.0}
+
+
+def test_log_matches_rerun_rejects_mismatched_lengths(monkeypatch):
+    monkeypatch.setitem(sys.modules, "rerun", types.SimpleNamespace())
+    with pytest.raises(ValueError, match="same length"):
+        log_matches_rerun("world/matches", np.zeros((2, 2)), np.zeros((1, 2)))
 
 
 def _install_fake_open3d(monkeypatch):

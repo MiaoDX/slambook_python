@@ -30,6 +30,42 @@ def log_points_rerun(entity_path: str, points: np.ndarray, colors: np.ndarray | 
     rr.log(entity_path, rr.Points3D(points, colors=colors))
 
 
+def log_matches_rerun(
+    entity_path: str,
+    points0: np.ndarray,
+    points1: np.ndarray,
+    *,
+    color: list[int] | None = None,
+    radius: float | None = None,
+) -> None:
+    """Log matched 2D point pairs to Rerun."""
+
+    import numpy as np
+
+    rr = require_rerun()
+    points0 = np.asarray(points0, dtype=np.float64)
+    points1 = np.asarray(points1, dtype=np.float64)
+    if points0.ndim != 2 or points0.shape[1] != 2:
+        raise ValueError("points0 must be an Nx2 array")
+    if points1.ndim != 2 or points1.shape[1] != 2:
+        raise ValueError("points1 must be an Nx2 array")
+    if len(points0) != len(points1):
+        raise ValueError("points0 and points1 must have the same length")
+
+    point_kwargs = {}
+    line_kwargs = {}
+    if color is not None:
+        point_kwargs["colors"] = color
+        line_kwargs["colors"] = color
+    if radius is not None:
+        point_kwargs["radii"] = radius
+        line_kwargs["radii"] = radius
+
+    rr.log(f"{entity_path}/points0", rr.Points2D(points0, **point_kwargs))
+    rr.log(f"{entity_path}/points1", rr.Points2D(points1, **point_kwargs))
+    rr.log(f"{entity_path}/lines", rr.LineStrips2D(np.stack([points0, points1], axis=1), **line_kwargs))
+
+
 def log_trajectory_rerun(
     entity_path: str,
     poses: list[np.ndarray],
