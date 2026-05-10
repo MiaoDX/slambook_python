@@ -8,6 +8,7 @@ from pathlib import Path
 import numpy as np
 
 from slam.camera.pinhole import CameraIntrinsics
+from slam.geometry.transforms import inverse_transform, make_transform
 
 
 @dataclass(frozen=True)
@@ -135,6 +136,28 @@ class VisualOdometryConfig:
         if not isinstance(data, dict):
             raise ValueError("VO config YAML must contain a mapping")
         return cls.from_mapping(data)
+
+
+def chain_relative_pose(
+    previous_pose_wc: np.ndarray,
+    rotation_10: np.ndarray,
+    translation_10: np.ndarray,
+    *,
+    translation_scale: float = 1.0,
+) -> np.ndarray:
+    """Compose a recovered two-view pose into a world-camera trajectory.
+
+    `rotation_10` and `translation_10` are interpreted as `T_10`, mapping
+    camera 0 coordinates into camera 1 coordinates. Returned pose is `T_wc1`.
+    """
+
+    previous_pose_wc = np.asarray(previous_pose_wc, dtype=np.float64)
+    if previous_pose_wc.shape != (4, 4):
+        raise ValueError("previous_pose_wc must have shape 4x4")
+
+    transform_10 = make_transform(rotation_10, np.asarray(translation_10, dtype=np.float64).reshape(3) * translation_scale)
+    transform_01 = inverse_transform(transform_10)
+    return previous_pose_wc @ transform_01
 
 
 def _points2(points: np.ndarray, *, name: str) -> np.ndarray:

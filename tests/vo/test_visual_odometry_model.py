@@ -2,7 +2,7 @@ import numpy as np
 
 from slam.camera.pinhole import CameraIntrinsics
 from slam.geometry.transforms import make_transform
-from slam.vo.visual_odometry import Camera, Frame, Map, MapPoint, VisualOdometryConfig
+from slam.vo.visual_odometry import Camera, Frame, Map, MapPoint, VisualOdometryConfig, chain_relative_pose
 
 
 def test_camera_wrapper_projects_with_intrinsics():
@@ -88,3 +88,13 @@ def test_visual_odometry_config_rejects_unknown_fields():
         assert "surprise" in str(exc)
     else:
         raise AssertionError("expected ValueError")
+
+
+def test_chain_relative_pose_converts_t10_to_next_world_pose():
+    previous_pose = np.eye(4)
+    rotation_10 = np.eye(3)
+    translation_10 = np.array([1.0, 0.0, 0.0])
+
+    next_pose = chain_relative_pose(previous_pose, rotation_10, translation_10, translation_scale=2.0)
+
+    np.testing.assert_allclose(next_pose[:3, 3], [-2.0, 0.0, 0.0])

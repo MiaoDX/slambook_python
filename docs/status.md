@@ -9,7 +9,7 @@
 | ch6 | Nonlinear optimization | In progress | SciPy | GTSAM | SciPy curve fitting example added |
 | ch7 | Feature VO | In progress | OpenCV | LightGlue/PyCOLMAP | ORB/SIFT interfaces, two-view helpers, 2D-2D, triangulation, and 3D-2D CLIs added |
 | ch8 | Direct VO | In progress | OpenCV/SciPy | JAX | Image pyramid, bilinear interpolation, and photometric residual helpers added |
-| ch9 | VO project | In progress | OpenCV | GTSAM/PyCOLMAP | Data model, config loading, and trajectory helpers added ahead of VO runner |
+| ch9 | VO project | In progress | OpenCV | GTSAM/PyCOLMAP | Data model, config loading, trajectory helpers, and minimal monocular runner added |
 | ch10 | Bundle adjustment | In progress | SciPy | GTSAM/PyCOLMAP | BAL parser, reprojection residuals, SciPy solve wrapper, and CLI added |
 | ch11 | Pose graph | In progress | SciPy small graph | GTSAM | g2o parser, edge errors, SciPy optimizer, and CLI added |
 | ch12 | Loop closure | In progress | OpenCV descriptors | FAISS/hloc | Baseline descriptor retrieval, temporal filtering, and CLI added |

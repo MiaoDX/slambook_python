@@ -12,7 +12,7 @@ from slam.vo.two_view import (
     estimate_two_view_pose,
     recover_relative_pose,
 )
-from slam.vo.visual_odometry import Camera, Frame, Map, MapPoint, VisualOdometryConfig
+from slam.vo.visual_odometry import Camera, Frame, Map, MapPoint, VisualOdometryConfig, chain_relative_pose
 
 __all__ = [
     "Camera",
@@ -27,6 +27,7 @@ __all__ = [
     "VisualOdometryConfig",
     "bilinear_interpolate",
     "build_image_pyramid",
+    "chain_relative_pose",
     "estimate_essential",
     "estimate_fundamental",
     "estimate_two_view_pose",
