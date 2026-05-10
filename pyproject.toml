@@ -46,7 +46,7 @@ modern = [
   "rerun-sdk>=0.16",
   "torch",
   "kornia",
-  "lightglue",
+  "lightglue @ git+https://github.com/cvg/LightGlue.git",
   "pycolmap",
   "faiss-cpu",
 ]
@@ -68,7 +68,7 @@ all = [
   "rerun-sdk>=0.16",
   "torch",
   "kornia",
-  "lightglue",
+  "lightglue @ git+https://github.com/cvg/LightGlue.git",
   "pycolmap",
   "faiss-cpu",
   "gtsam",

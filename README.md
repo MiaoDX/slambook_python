@@ -20,6 +20,20 @@ pip install -e .[core,test]
 python -m pytest
 ```
 
+With `uv`, use the declared extras directly:
+
+```bash
+uv sync --extra core --extra test
+uv run --extra core --extra test python -m pytest
+```
+
+In mainland China, a PyPI mirror can be used with the checked-in lockfile:
+
+```bash
+UV_DEFAULT_INDEX=https://pypi.tuna.tsinghua.edu.cn/simple uv sync --extra core --extra test --frozen
+UV_DEFAULT_INDEX=https://pypi.tuna.tsinghua.edu.cn/simple uv run --extra core --extra test --frozen python -m pytest
+```
+
 Optional dependency groups are defined for 3D/evaluation tools, modern matchers,
 and reference backends:
 
