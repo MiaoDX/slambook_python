@@ -313,6 +313,53 @@ def estimate_frame_pose_from_local_map(
     return LocalMapTrackingResult(success=True, pose_wc=pose_wc, pnp=pnp, matches=matches)
 
 
+@dataclass
+class VisualOdometry:
+    """Small stateful coordinator for the Chapter 9 mini VO project."""
+
+    camera: Camera
+    config: VisualOdometryConfig = field(default_factory=VisualOdometryConfig)
+    map: Map = field(default_factory=Map)
+    current_frame: Frame | None = None
+
+    def insert_keyframe(self, frame: Frame) -> Frame:
+        self.map.insert_keyframe(frame)
+        self.current_frame = frame
+        return frame
+
+    def should_insert_keyframe(self, frame: Frame) -> bool:
+        if not self.map.keyframes:
+            return True
+        latest_keyframe = self.map.keyframes[max(self.map.keyframes)]
+        translation_delta = np.linalg.norm(frame.pose_wc[:3, 3] - latest_keyframe.pose_wc[:3, 3])
+        return bool(translation_delta >= self.config.keyframe_min_translation)
+
+    def track_local_map(
+        self,
+        frame: Frame,
+        *,
+        feature: str | None = None,
+        max_matches: int | None = None,
+        insert_keyframe: bool = True,
+    ) -> LocalMapTrackingResult:
+        result = estimate_frame_pose_from_local_map(
+            frame,
+            self.map,
+            self.camera,
+            config=self.config,
+            feature=feature,
+            max_matches=max_matches,
+        )
+        if not result.success or result.pose_wc is None:
+            return result
+
+        frame.set_pose(result.pose_wc)
+        self.current_frame = frame
+        if insert_keyframe and self.should_insert_keyframe(frame):
+            self.insert_keyframe(frame)
+        return result
+
+
 def _empty_local_map_matches() -> LocalMapMatchSet:
     return LocalMapMatchSet(
         point_ids=np.empty(0, dtype=np.int64),

@@ -8,6 +8,7 @@ from slam.vo.visual_odometry import (
     LocalMapMatchSet,
     Map,
     MapPoint,
+    VisualOdometry,
     VisualOdometryConfig,
     chain_relative_pose,
     estimate_frame_pose_from_local_map,
@@ -146,6 +147,66 @@ def test_estimate_frame_pose_from_local_map_reports_insufficient_matches():
     assert result.pose_wc is None
     assert result.pnp is None
     assert "need at least 4" in result.message
+
+
+def test_visual_odometry_keyframe_threshold_uses_last_keyframe_pose():
+    camera = Camera(CameraIntrinsics(fx=700.0, fy=710.0, cx=320.0, cy=240.0))
+    vo = VisualOdometry(camera=camera, config=VisualOdometryConfig(keyframe_min_translation=0.2))
+    first = Frame(id=1, timestamp=0.0, image=np.zeros((4, 4), dtype=np.uint8))
+    near = Frame(
+        id=2,
+        timestamp=0.1,
+        image=np.zeros((4, 4), dtype=np.uint8),
+        pose_wc=make_transform(np.eye(3), np.array([0.1, 0.0, 0.0])),
+    )
+    far = Frame(
+        id=3,
+        timestamp=0.2,
+        image=np.zeros((4, 4), dtype=np.uint8),
+        pose_wc=make_transform(np.eye(3), np.array([0.3, 0.0, 0.0])),
+    )
+
+    assert vo.should_insert_keyframe(first)
+    vo.insert_keyframe(first)
+
+    assert not vo.should_insert_keyframe(near)
+    assert vo.should_insert_keyframe(far)
+
+
+def test_visual_odometry_track_local_map_updates_pose_and_keyframes():
+    camera = Camera(CameraIntrinsics(fx=700.0, fy=710.0, cx=320.0, cy=240.0))
+    config = VisualOdometryConfig(min_pnp_inliers=4, keyframe_min_translation=0.05)
+    vo = VisualOdometry(camera=camera, config=config)
+    vo.insert_keyframe(Frame(id=0, timestamp=0.0, image=np.zeros((8, 8), dtype=np.uint8)))
+    points_w = np.array(
+        [
+            [-1.0, -0.6, 4.0],
+            [-0.2, -0.7, 4.5],
+            [0.6, -0.3, 5.0],
+            [1.0, 0.2, 5.5],
+            [-0.8, 0.4, 6.0],
+            [0.0, 0.7, 6.5],
+        ]
+    )
+    descriptors = np.zeros((len(points_w), 32), dtype=np.uint8)
+    descriptors[:, 0] = np.arange(1, len(points_w) + 1, dtype=np.uint8)
+    for index, point_w in enumerate(points_w):
+        vo.map.insert_map_point(MapPoint(id=index, position_w=point_w, descriptor=descriptors[index]))
+    transform_cw = make_transform(np.eye(3), np.array([0.2, -0.1, 0.3]))
+    frame = Frame(
+        id=2,
+        timestamp=0.1,
+        image=np.zeros((8, 8), dtype=np.uint8),
+        keypoints=project_points(points_w, transform_cw[:3, :3], transform_cw[:3, 3], camera.matrix),
+        descriptors=descriptors.copy(),
+    )
+
+    result = vo.track_local_map(frame)
+
+    assert result.success
+    assert vo.current_frame is frame
+    assert frame.id in vo.map.keyframes
+    np.testing.assert_allclose(frame.pose_wc, np.linalg.inv(transform_cw), atol=1e-5)
 
 
 def test_local_map_match_set_rejects_mismatched_lengths():
