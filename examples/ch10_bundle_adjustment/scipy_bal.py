@@ -1,4 +1,4 @@
-"""Run SciPy least-squares on a BAL bundle adjustment problem."""
+"""Run bundle adjustment backends on a BAL problem."""
 
 from __future__ import annotations
 
@@ -6,12 +6,15 @@ import argparse
 from pathlib import Path
 
 from slam.optimization.bundle_adjustment import read_bal_problem, reprojection_rmse, solve_bundle_adjustment
+from slam.optimization.gtsam_backend import OptionalBackendDependencyError, optimize_bundle_adjustment_gtsam
 
 
 def _parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--bal", required=True, type=Path, help="Path to a BAL text problem.")
+    parser.add_argument("--backend", choices=["scipy", "gtsam"], default="scipy")
     parser.add_argument("--max-nfev", type=int, help="Maximum SciPy residual evaluations.")
+    parser.add_argument("--max-iterations", type=int, help="Maximum GTSAM Levenberg-Marquardt iterations.")
     parser.add_argument("--loss", default="linear", help="SciPy least_squares loss, e.g. linear or soft_l1.")
     parser.add_argument("--f-scale", type=float, default=1.0)
     parser.add_argument("--fix-cameras", action="store_true", help="Optimize points only.")
@@ -25,16 +28,28 @@ def main() -> None:
         raise SystemExit("Cannot use --fix-cameras and --fix-points together.")
 
     problem = read_bal_problem(args.bal)
-    result = solve_bundle_adjustment(
-        problem,
-        optimize_cameras=not args.fix_cameras,
-        optimize_points=not args.fix_points,
-        loss=args.loss,
-        f_scale=args.f_scale,
-        max_nfev=args.max_nfev,
-    )
+    if args.backend == "gtsam":
+        try:
+            result = optimize_bundle_adjustment_gtsam(
+                problem,
+                optimize_cameras=not args.fix_cameras,
+                optimize_points=not args.fix_points,
+                max_iterations=args.max_iterations,
+            )
+        except OptionalBackendDependencyError as exc:
+            raise SystemExit(str(exc)) from exc
+    else:
+        result = solve_bundle_adjustment(
+            problem,
+            optimize_cameras=not args.fix_cameras,
+            optimize_points=not args.fix_points,
+            loss=args.loss,
+            f_scale=args.f_scale,
+            max_nfev=args.max_nfev,
+        )
 
     print(f"BAL file: {args.bal}")
+    print(f"backend: {args.backend}")
     print(f"camera count: {len(problem.camera_params)}")
     print(f"point count: {len(problem.points_3d)}")
     print(f"observation count: {len(problem.observations)}")

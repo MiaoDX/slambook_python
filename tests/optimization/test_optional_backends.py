@@ -5,7 +5,13 @@ import types
 import numpy as np
 import pytest
 
-from slam.optimization.gtsam_backend import OptionalBackendDependencyError, optimize_pose_graph_gtsam, require_gtsam
+from slam.optimization.bundle_adjustment import BALObservation, BALProblem
+from slam.optimization.gtsam_backend import (
+    OptionalBackendDependencyError,
+    optimize_bundle_adjustment_gtsam,
+    optimize_pose_graph_gtsam,
+    require_gtsam,
+)
 from slam.optimization.pose_graph import PoseGraph, PoseGraphEdge, PoseGraphVertex
 from slam.optimization.pycolmap_backend import require_pycolmap, run_pycolmap_reconstruction
 
@@ -114,6 +120,28 @@ def test_run_pycolmap_reconstruction_uses_reference_pipeline(monkeypatch, tmp_pa
     assert result.reconstructions[0].written_path == output_dir
 
 
+def test_optimize_bundle_adjustment_gtsam_uses_optional_backend(monkeypatch):
+    fake_gtsam = _install_fake_gtsam(monkeypatch)
+    problem = BALProblem(
+        camera_params=np.array([[0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 100.0, 0.0, 0.0]]),
+        points_3d=np.array([[0.5, 0.0, -5.0]]),
+        observations=[BALObservation(camera_index=0, point_index=0, xy=np.array([0.0, 0.0]))],
+    )
+
+    result = optimize_bundle_adjustment_gtsam(
+        problem,
+        optimize_cameras=False,
+        optimize_points=True,
+        max_iterations=3,
+    )
+
+    assert result.success
+    assert result.final_rmse < result.initial_rmse
+    np.testing.assert_allclose(result.problem.points_3d, [[0.0, 0.0, -5.0]])
+    assert fake_gtsam.last_params.max_iterations == 3
+    assert len(fake_gtsam.last_graph.factors) == 2
+
+
 def _install_fake_gtsam(monkeypatch):
     fake = types.SimpleNamespace()
 
@@ -134,6 +162,10 @@ def _install_fake_gtsam(monkeypatch):
         def __array__(self, dtype=None):
             return self.vector.astype(dtype) if dtype is not None else self.vector
 
+    class Point2:
+        def __init__(self, x, y):
+            self.vector = np.array([x, y], dtype=np.float64)
+
     class Pose3:
         def __init__(self, rotation=None, point=None):
             self.transform = np.eye(4, dtype=np.float64)
@@ -148,12 +180,19 @@ def _install_fake_gtsam(monkeypatch):
     class Values:
         def __init__(self):
             self.poses = {}
+            self.points = {}
 
         def insert(self, key, pose):
-            self.poses[key] = pose
+            if isinstance(pose, Pose3):
+                self.poses[key] = pose
+            else:
+                self.points[key] = pose
 
         def atPose3(self, key):
             return self.poses[key]
+
+        def atPoint3(self, key):
+            return self.points[key]
 
     class NonlinearFactorGraph:
         def __init__(self):
@@ -185,19 +224,38 @@ def _install_fake_gtsam(monkeypatch):
                 if key == 1:
                     transform[:3, 3] = [1.0, 0.0, 0.0]
                 optimized.insert(key, Pose3(Rot3(transform[:3, :3]), Point3(transform[:3, 3])))
+            for key, point in self.initial.points.items():
+                vector = np.asarray(point, dtype=np.float64)
+                if key >= 2_000_000:
+                    vector = np.array([0.0, 0.0, -5.0], dtype=np.float64)
+                optimized.insert(key, Point3(vector))
             return optimized
 
     fake.Rot3 = Rot3
+    fake.Point2 = Point2
     fake.Point3 = Point3
     fake.Pose3 = Pose3
     fake.Values = Values
     fake.NonlinearFactorGraph = NonlinearFactorGraph
     fake.PriorFactorPose3 = lambda key, pose, noise: ("prior", key, pose, noise)
+    fake.PriorFactorPoint3 = lambda key, point, noise: ("point_prior", key, point, noise)
     fake.BetweenFactorPose3 = lambda key0, key1, pose, noise: ("between", key0, key1, pose, noise)
+    fake.Cal3Bundler = lambda focal, k1, k2, u0, v0: ("cal3bundler", focal, k1, k2, u0, v0)
+    fake.GenericProjectionFactorCal3Bundler = (
+        lambda measured, noise, pose_key, point_key, calibration: (
+            "projection",
+            measured,
+            noise,
+            pose_key,
+            point_key,
+            calibration,
+        )
+    )
     fake.LevenbergMarquardtParams = LevenbergMarquardtParams
     fake.LevenbergMarquardtOptimizer = LevenbergMarquardtOptimizer
     fake.noiseModel = types.SimpleNamespace(
         Gaussian=types.SimpleNamespace(Information=lambda information: ("information", information)),
+        Isotropic=types.SimpleNamespace(Sigma=lambda size, sigma: ("isotropic", size, sigma)),
         Constrained=types.SimpleNamespace(All=lambda size: ("constrained", size)),
     )
     monkeypatch.setitem(sys.modules, "gtsam", fake)
