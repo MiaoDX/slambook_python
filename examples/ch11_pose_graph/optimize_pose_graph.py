@@ -6,6 +6,7 @@ import argparse
 from pathlib import Path
 
 from slam.io.trajectory import write_kitti_trajectory, write_tum_trajectory
+from slam.optimization.gtsam_backend import OptionalBackendDependencyError, optimize_pose_graph_gtsam
 from slam.optimization.pose_graph import pose_graph_to_trajectory, read_g2o_pose_graph, solve_pose_graph
 from slam.viz import OptionalVisualizationDependencyError, log_trajectory_rerun, require_rerun, save_trajectory_plot
 
@@ -13,8 +14,10 @@ from slam.viz import OptionalVisualizationDependencyError, log_trajectory_rerun,
 def _parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--g2o", required=True, type=Path, help="Path to a .g2o pose graph.")
+    parser.add_argument("--backend", choices=("scipy", "gtsam"), default="scipy")
     parser.add_argument("--fixed-vertex", type=int, help="Vertex id to hold fixed. Defaults to the smallest id.")
     parser.add_argument("--max-nfev", type=int, help="Maximum SciPy residual evaluations.")
+    parser.add_argument("--max-iterations", type=int, help="Maximum GTSAM Levenberg-Marquardt iterations.")
     parser.add_argument("--output-tum", type=Path, help="Optional optimized TUM trajectory output path.")
     parser.add_argument("--output-kitti", type=Path, help="Optional optimized KITTI trajectory output path.")
     parser.add_argument("--plot-output", type=Path, help="Optional optimized trajectory plot image path.")
@@ -26,9 +29,20 @@ def _parse_args() -> argparse.Namespace:
 def main() -> None:
     args = _parse_args()
     graph = read_g2o_pose_graph(args.g2o)
-    result = solve_pose_graph(graph, fixed_vertex_id=args.fixed_vertex, max_nfev=args.max_nfev)
+    if args.backend == "scipy":
+        result = solve_pose_graph(graph, fixed_vertex_id=args.fixed_vertex, max_nfev=args.max_nfev)
+    else:
+        try:
+            result = optimize_pose_graph_gtsam(
+                graph,
+                fixed_vertex_id=args.fixed_vertex,
+                max_iterations=args.max_iterations,
+            )
+        except OptionalBackendDependencyError as exc:
+            raise SystemExit(str(exc)) from exc
 
     print(f"g2o file: {args.g2o}")
+    print(f"backend: {args.backend}")
     print(f"vertex count: {len(graph.vertices)}")
     print(f"edge count: {len(graph.edges)}")
     print(f"initial edge error: {result.initial_error:.9f}")
