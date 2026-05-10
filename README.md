@@ -20,8 +20,7 @@ uv run --extra core --extra test --frozen python examples/ch10_bundle_adjustment
   --bal examples/ch10_bundle_adjustment/tiny_bal.txt \
   --fix-cameras
 uv run --extra core --extra test --frozen python examples/ch11_pose_graph/optimize_pose_graph.py \
-  --g2o examples/ch11_pose_graph/tiny_pose_graph.g2o \
-  --solve
+  --g2o examples/ch11_pose_graph/tiny_pose_graph.g2o
 ```
 
 Then add slambook sample images under `data/slambook/` and continue with the
