@@ -8,7 +8,7 @@ from pathlib import Path
 import cv2
 import numpy as np
 
-from slam.vo.direct import photometric_residuals
+from slam.vo.direct import photometric_residuals, refine_translation_2d
 
 
 def _parse_args() -> argparse.Namespace:
@@ -20,6 +20,11 @@ def _parse_args() -> argparse.Namespace:
         required=True,
         type=Path,
         help="Nx4 .npy array: reference_x reference_y current_x current_y.",
+    )
+    parser.add_argument(
+        "--refine-translation",
+        action="store_true",
+        help="Refine a single 2D translation from the reference points instead of only evaluating supplied current points.",
     )
     return parser.parse_args()
 
@@ -51,6 +56,15 @@ def main() -> None:
         print(f"residual mean: {float(valid_residuals.mean()):.9f}")
         print(f"residual median: {float(np.median(valid_residuals)):.9f}")
         print(f"residual rmse: {float(np.sqrt(np.mean(valid_residuals * valid_residuals))):.9f}")
+
+    if args.refine_translation:
+        initial = np.nanmedian(points[:, 2:] - points[:, :2], axis=0)
+        result = refine_translation_2d(reference, current, points[:, :2], initial_translation=initial)
+        print(f"initial translation: {result.initial_translation}")
+        print(f"refined translation: {result.translation}")
+        print(f"refined residual rmse: {result.residual_rmse:.9f}")
+        print(f"refinement evaluations: {result.nfev}")
+        print(f"refinement success: {result.success}")
 
 
 if __name__ == "__main__":

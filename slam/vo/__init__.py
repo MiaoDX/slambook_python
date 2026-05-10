@@ -1,6 +1,12 @@
 """Visual odometry helpers."""
 
-from slam.vo.direct import bilinear_interpolate, build_image_pyramid, photometric_residuals
+from slam.vo.direct import (
+    DirectAlignmentResult,
+    bilinear_interpolate,
+    build_image_pyramid,
+    photometric_residuals,
+    refine_translation_2d,
+)
 from slam.vo.pnp import PnPResult, project_points, solve_pnp
 from slam.vo.two_view import (
     EssentialResult,
@@ -16,6 +22,7 @@ from slam.vo.visual_odometry import Camera, Frame, Map, MapPoint, VisualOdometry
 
 __all__ = [
     "Camera",
+    "DirectAlignmentResult",
     "EssentialResult",
     "FundamentalResult",
     "Frame",
@@ -34,5 +41,6 @@ __all__ = [
     "project_points",
     "photometric_residuals",
     "recover_relative_pose",
+    "refine_translation_2d",
     "solve_pnp",
 ]
