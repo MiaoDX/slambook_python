@@ -56,11 +56,24 @@ def main() -> None:
             continue
 
         try:
-            create_learned_matcher(matcher)
+            learned_matcher = create_learned_matcher(matcher, max_features=args.max_features)
         except OptionalFeatureDependencyError as exc:
             print(f"{matcher}: unavailable: {exc}")
-        else:
-            print(f"{matcher}: dependency available, adapter implementation pending")
+            continue
+
+        result = learned_matcher.match_images(image0, image1)
+        print(
+            f"{matcher}: keypoints0={len(result.keypoints0)} "
+            f"keypoints1={len(result.keypoints1)} matches={len(result.matches)}"
+        )
+        if args.rerun:
+            log_matches_rerun(
+                f"{args.rerun_entity}/{matcher}",
+                result.points0,
+                result.points1,
+                color=[255, 128, 0],
+                radius=2.0,
+            )
 
 
 if __name__ == "__main__":

@@ -36,6 +36,19 @@ python examples/ch7_feature_vo/triangulation.py \
   --output-points outputs/ch7_points.npy
 ```
 
+## Matcher Comparison
+
+```bash
+python examples/ch7_feature_vo/compare_matchers.py \
+  --image0 data/slambook/ch7/1.png \
+  --image1 data/slambook/ch7/2.png \
+  --matchers orb sift lightglue loftr
+```
+
+`lightglue` and `loftr` require the optional `modern` dependencies. They keep
+the same matched-point interface as the OpenCV matchers, so downstream pose
+examples can compare matcher quality without changing geometry code.
+
 ## 3D-2D Pose Estimation
 
 `pose_estimation_3d2d.py` uses the first image's depth map to back-project
