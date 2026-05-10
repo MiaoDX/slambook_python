@@ -9,8 +9,8 @@
 | ch6 | Nonlinear optimization | In progress | SciPy | GTSAM | SciPy curve fitting example added |
 | ch7 | Feature VO | In progress | OpenCV | LightGlue/PyCOLMAP | ORB/SIFT interfaces, learned matcher guards, ch7 CLIs, and legacy script status documented |
 | ch8 | Direct VO | In progress | OpenCV/SciPy | JAX | LK flow, sparse residual/refinement CLIs, image pyramid, and interpolation helpers added |
-| ch9 | VO project | In progress | OpenCV | GTSAM/PyCOLMAP | Data model, config loading, trajectory/viz helpers, and minimal monocular runner added |
+| ch9 | VO project | In progress | OpenCV | GTSAM/PyCOLMAP | Data model, config loading, local-map matching/tracking, trajectory/viz helpers, and minimal monocular runner added |
 | ch10 | Bundle adjustment | In progress | SciPy | GTSAM/PyCOLMAP | BAL parser, `scipy_ba` module, CLI, and optional backend guards added |
-| ch11 | Pose graph | In progress | SciPy small graph | GTSAM | g2o parser, SciPy optimizer, CLI, and optional GTSAM guard added |
+| ch11 | Pose graph | In progress | SciPy small graph | GTSAM | g2o parser, SciPy optimizer, CLI trajectory export, Matplotlib plot export, optional Rerun logging, and GTSAM guard added |
 | ch12 | Loop closure | In progress | OpenCV descriptors | FAISS/hloc | OpenCV descriptor builder, retrieval, temporal filtering, and CLIs added |
 | ch13 | Dense mapping | In progress | Open3D | Rerun | RGB-D arrays, known-pose fusion, voxel downsampling, PLY output/downsample CLI, and optional viz guards added |
