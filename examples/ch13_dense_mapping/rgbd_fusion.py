@@ -11,6 +11,7 @@ import numpy as np
 from slam.camera.pinhole import CameraIntrinsics
 from slam.mapping.pointcloud import estimate_normals, voxel_downsample, write_ply_ascii
 from slam.mapping.rgbd import rgbd_to_point_cloud
+from slam.viz import OptionalVisualizationDependencyError, log_points_rerun, require_rerun
 
 
 def _parse_args() -> argparse.Namespace:
@@ -24,6 +25,8 @@ def _parse_args() -> argparse.Namespace:
     parser.add_argument("--voxel-size", type=float, help="Optional voxel size for centroid downsampling.")
     parser.add_argument("--estimate-normals", action="store_true", help="Estimate PCA normals before writing PLY.")
     parser.add_argument("--normal-k", type=int, default=16, help="Neighbor count for --estimate-normals.")
+    parser.add_argument("--rerun", action="store_true", help="Log the output point cloud to Rerun.")
+    parser.add_argument("--rerun-entity", default="world/rgbd_cloud", help="Rerun entity path for --rerun.")
     return parser.parse_args()
 
 
@@ -62,6 +65,13 @@ def main() -> None:
         points, colors = voxel_downsample(points, colors, voxel_size=args.voxel_size)
     normals = estimate_normals(points, k=args.normal_k, viewpoint=np.zeros(3)) if args.estimate_normals else None
     write_ply_ascii(args.output, points, colors, normals)
+    if args.rerun:
+        try:
+            rr = require_rerun()
+            rr.init("slambook_rgbd_fusion", spawn=True)
+            log_points_rerun(args.rerun_entity, points, colors)
+        except OptionalVisualizationDependencyError as exc:
+            raise SystemExit(str(exc)) from exc
 
     print(f"color: {args.color}")
     print(f"depth: {args.depth}")
@@ -73,6 +83,8 @@ def main() -> None:
     if args.estimate_normals:
         print(f"normal count: {len(normals)}")
         print(f"normal k: {args.normal_k}")
+    if args.rerun:
+        print(f"logged Rerun point cloud: {args.rerun_entity}")
     print(f"depth scale: {args.depth_scale}")
     if args.depth_trunc is not None:
         print(f"depth truncation: {args.depth_trunc}")
