@@ -23,6 +23,30 @@ data/
     poses/
 ```
 
+Chapter 9's mini VO runner expects one directory containing an ordered image
+sequence. Filenames are sorted lexicographically, so zero-padded names are
+recommended:
+
+```text
+data/
+  slambook/
+    ch9/
+      images/
+        000000.png
+        000001.png
+        000002.png
+```
+
+Run it with explicit intrinsics and optional trajectory outputs:
+
+```bash
+python examples/ch9_project/run_vo.py \
+  --images data/slambook/ch9/images \
+  --intrinsics FX FY CX CY \
+  --output-tum outputs/ch9.tum \
+  --output-kitti outputs/ch9.txt
+```
+
 For RGB-D examples, depth scale must be explicit. TUM-style `uint16` depth often
 uses `--depth-scale 5000`; metric floating-point depth should use
 `--depth-scale 1`.
