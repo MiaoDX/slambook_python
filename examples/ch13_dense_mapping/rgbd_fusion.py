@@ -1,4 +1,4 @@
-"""Create a point cloud from one RGB-D frame and write it as PLY."""
+"""Fuse one or more RGB-D frames with known poses and write PLY."""
 
 from __future__ import annotations
 
@@ -9,7 +9,9 @@ import cv2
 import numpy as np
 
 from slam.camera.pinhole import CameraIntrinsics
-from slam.mapping.pointcloud import estimate_normals, voxel_downsample, write_ply_ascii
+from slam.io.datasets import list_image_sequence
+from slam.io.trajectory import read_slambook_pose_file
+from slam.mapping.pointcloud import estimate_normals, fuse_point_clouds, voxel_downsample, write_ply_ascii
 from slam.mapping.rgbd import rgbd_to_point_cloud
 from slam.viz import (
     OptionalVisualizationDependencyError,
@@ -22,8 +24,15 @@ from slam.viz import (
 
 def _parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--color", required=True, type=Path, help="Path to an RGB/BGR color image.")
-    parser.add_argument("--depth", required=True, type=Path, help="Path to a depth image aligned to color.")
+    single = parser.add_argument_group("single frame")
+    single.add_argument("--color", type=Path, help="Path to an RGB/BGR color image.")
+    single.add_argument("--depth", type=Path, help="Path to a depth image aligned to color.")
+    sequence = parser.add_argument_group("known-pose sequence")
+    sequence.add_argument("--color-dir", type=Path, help="Directory of color images.")
+    sequence.add_argument("--depth-dir", type=Path, help="Directory of depth images aligned to color.")
+    sequence.add_argument("--pose-file", type=Path, help="slambook pose.txt with tx ty tz qx qy qz qw rows.")
+    sequence.add_argument("--color-pattern", default="*.png")
+    sequence.add_argument("--depth-pattern", default="*.png")
     parser.add_argument("--output", required=True, type=Path, help="Output ASCII PLY path.")
     parser.add_argument("--intrinsics", required=True, type=float, nargs=4, metavar=("FX", "FY", "CX", "CY"))
     parser.add_argument("--depth-scale", type=float, default=1000.0)
@@ -54,21 +63,72 @@ def _read_depth(path: Path):
     return depth
 
 
+def _cloud_from_paths(
+    color_path: Path,
+    depth_path: Path,
+    intrinsics: CameraIntrinsics,
+    *,
+    depth_scale: float,
+    depth_trunc: float | None,
+):
+    return rgbd_to_point_cloud(
+        _read_color(color_path),
+        _read_depth(depth_path),
+        intrinsics,
+        depth_scale=depth_scale,
+        depth_trunc=depth_trunc,
+    )
+
+
+def _load_fused_cloud(args: argparse.Namespace, intrinsics: CameraIntrinsics) -> tuple[np.ndarray, np.ndarray | None, int]:
+    single_requested = args.color is not None or args.depth is not None
+    sequence_requested = args.color_dir is not None or args.depth_dir is not None or args.pose_file is not None
+    if single_requested == sequence_requested:
+        raise SystemExit("Pass either --color/--depth or --color-dir/--depth-dir/--pose-file.")
+    if single_requested:
+        if args.color is None or args.depth is None:
+            raise SystemExit("Single-frame mode requires both --color and --depth.")
+        cloud = _cloud_from_paths(
+            args.color,
+            args.depth,
+            intrinsics,
+            depth_scale=args.depth_scale,
+            depth_trunc=args.depth_trunc,
+        )
+        return cloud.points, cloud.colors, 1
+
+    if args.color_dir is None or args.depth_dir is None or args.pose_file is None:
+        raise SystemExit("Sequence mode requires --color-dir, --depth-dir, and --pose-file.")
+    color_frames = list_image_sequence(args.color_dir, pattern=args.color_pattern)
+    depth_frames = list_image_sequence(args.depth_dir, pattern=args.depth_pattern)
+    poses_wc = read_slambook_pose_file(args.pose_file)
+    if not color_frames:
+        raise SystemExit("No color frames matched --color-pattern.")
+    if len(color_frames) != len(depth_frames):
+        raise SystemExit(f"Color/depth frame count mismatch: {len(color_frames)} vs {len(depth_frames)}.")
+    if len(poses_wc) != len(color_frames):
+        raise SystemExit(f"Pose/frame count mismatch: {len(poses_wc)} vs {len(color_frames)}.")
+
+    clouds = []
+    for color_frame, depth_frame in zip(color_frames, depth_frames):
+        cloud = _cloud_from_paths(
+            color_frame.image_path,
+            depth_frame.image_path,
+            intrinsics,
+            depth_scale=args.depth_scale,
+            depth_trunc=args.depth_trunc,
+        )
+        clouds.append((cloud.points, cloud.colors))
+    points, colors = fuse_point_clouds(clouds, transforms_wb=poses_wc)
+    return points, colors, len(clouds)
+
+
 def main() -> None:
     args = _parse_args()
     fx, fy, cx, cy = args.intrinsics
     intrinsics = CameraIntrinsics(fx=fx, fy=fy, cx=cx, cy=cy)
-    color = _read_color(args.color)
-    depth = _read_depth(args.depth)
-    cloud = rgbd_to_point_cloud(
-        color,
-        depth,
-        intrinsics,
-        depth_scale=args.depth_scale,
-        depth_trunc=args.depth_trunc,
-    )
-    points = cloud.points
-    colors = cloud.colors
+    points, colors, frame_count = _load_fused_cloud(args, intrinsics)
+    input_point_count = len(points)
     if args.voxel_size is not None:
         points, colors = voxel_downsample(points, colors, voxel_size=args.voxel_size)
     normals = estimate_normals(points, k=args.normal_k, viewpoint=np.zeros(3)) if args.estimate_normals else None
@@ -92,10 +152,16 @@ def main() -> None:
         except OptionalVisualizationDependencyError as exc:
             raise SystemExit(str(exc)) from exc
 
-    print(f"color: {args.color}")
-    print(f"depth: {args.depth}")
+    if args.color is not None:
+        print(f"color: {args.color}")
+        print(f"depth: {args.depth}")
+    else:
+        print(f"color dir: {args.color_dir}")
+        print(f"depth dir: {args.depth_dir}")
+        print(f"pose file: {args.pose_file}")
+        print(f"frame count: {frame_count}")
     print(f"output: {args.output}")
-    print(f"point count: {len(cloud.points)}")
+    print(f"point count: {input_point_count}")
     if args.voxel_size is not None:
         print(f"downsampled point count: {len(points)}")
         print(f"voxel size: {args.voxel_size}")

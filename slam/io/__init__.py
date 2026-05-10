@@ -12,7 +12,13 @@ from slam.io.image_retrieval import (
     retrieve_nearest_faiss,
     temporal_exclusion_indices,
 )
-from slam.io.trajectory import PoseStamped, read_tum_trajectory, write_kitti_trajectory, write_tum_trajectory
+from slam.io.trajectory import (
+    PoseStamped,
+    read_slambook_pose_file,
+    read_tum_trajectory,
+    write_kitti_trajectory,
+    write_tum_trajectory,
+)
 
 __all__ = [
     "ImageSequenceFrame",
@@ -24,6 +30,7 @@ __all__ = [
     "list_image_sequence",
     "mean_pool_descriptors",
     "opencv_global_descriptor",
+    "read_slambook_pose_file",
     "read_tum_trajectory",
     "require_faiss",
     "retrieve_loop_candidates",

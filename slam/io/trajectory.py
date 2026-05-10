@@ -57,6 +57,28 @@ def read_tum_trajectory(path: str | Path) -> list[PoseStamped]:
     return poses
 
 
+def read_slambook_pose_file(path: str | Path) -> list[np.ndarray]:
+    """Read slambook `pose.txt` rows as `T_wc` camera poses.
+
+    Each non-comment row must contain `tx ty tz qx qy qz qw`.
+    """
+
+    poses: list[np.ndarray] = []
+    for line_number, line in enumerate(Path(path).read_text(encoding="utf-8").splitlines(), start=1):
+        stripped = line.strip()
+        if not stripped or stripped.startswith("#"):
+            continue
+        parts = stripped.split()
+        if len(parts) != 7:
+            raise ValueError(f"line {line_number}: expected 7 columns, got {len(parts)}")
+        tx, ty, tz, qx, qy, qz, qw = (float(value) for value in parts)
+        transform = np.eye(4, dtype=np.float64)
+        transform[:3, :3] = Rotation.from_quat([qx, qy, qz, qw]).as_matrix()
+        transform[:3, 3] = [tx, ty, tz]
+        poses.append(transform)
+    return poses
+
+
 def write_kitti_trajectory(path: str | Path, poses: Iterable[np.ndarray | PoseStamped]) -> None:
     """Write poses in KITTI odometry format: one flattened `3x4` `T_wc` per line."""
 

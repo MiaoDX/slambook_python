@@ -51,6 +51,25 @@ For RGB-D examples, depth scale must be explicit. TUM-style `uint16` depth often
 uses `--depth-scale 5000`; metric floating-point depth should use
 `--depth-scale 1`.
 
+The slambook `joinMap` / dense RGB-D examples use sorted `color/` and `depth/`
+directories plus a `pose.txt` file with rows in this format:
+
+```text
+tx ty tz qx qy qz qw
+```
+
+Run the known-pose fusion path with:
+
+```bash
+python examples/ch13_dense_mapping/rgbd_fusion.py \
+  --color-dir data/slambook/ch13/color \
+  --depth-dir data/slambook/ch13/depth \
+  --pose-file data/slambook/ch13/pose.txt \
+  --intrinsics FX FY CX CY \
+  --depth-scale 5000 \
+  --output outputs/ch13_map.ply
+```
+
 TUM RGB-D association files are parsed from `rgb.txt` and `depth.txt` using the
 standard two-column format:
 
