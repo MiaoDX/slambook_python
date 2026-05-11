@@ -16,14 +16,14 @@ the core environment and the chapters that need no large datasets:
 
 ```bash
 uv sync --extra core --extra test --frozen
-uv run --frozen python -m pytest
-uv run --frozen python examples/ch3_geometry/transforms.py
-uv run --frozen python examples/ch4_lie/exp_log.py
-uv run --frozen python examples/ch6_optimization/curve_fitting.py
-uv run --frozen python examples/ch10_bundle_adjustment/scipy_bal.py \
+uv run python -m pytest
+uv run python examples/ch3_geometry/transforms.py
+uv run python examples/ch4_lie/exp_log.py
+uv run python examples/ch6_optimization/curve_fitting.py
+uv run python examples/ch10_bundle_adjustment/scipy_bal.py \
   --bal examples/ch10_bundle_adjustment/tiny_bal.txt \
   --fix-cameras
-uv run --frozen python examples/ch11_pose_graph/optimize_pose_graph.py \
+uv run python examples/ch11_pose_graph/optimize_pose_graph.py \
   --g2o examples/ch11_pose_graph/tiny_pose_graph.g2o
 ```
 
@@ -36,13 +36,13 @@ For mainland China, sync the same environment with a uv mirror:
 
 ```bash
 UV_DEFAULT_INDEX=https://pypi.tuna.tsinghua.edu.cn/simple uv sync --extra core --extra test --frozen
-uv run --frozen python -m pytest
+uv run python -m pytest
 ```
 
 ## Install
 
 This repo documents the `uv` workflow only. Sync once for the dependency group
-you need, then use `uv run --frozen ...` for normal commands.
+you need, then use `uv run ...` for normal commands.
 
 Core educational dependencies:
 
@@ -54,14 +54,14 @@ Core dependencies plus tests:
 
 ```bash
 uv sync --extra core --extra test --frozen
-uv run --frozen python -m pytest
+uv run python -m pytest
 ```
 
 In mainland China, a PyPI mirror can be used with the checked-in lockfile:
 
 ```bash
 UV_DEFAULT_INDEX=https://pypi.tuna.tsinghua.edu.cn/simple uv sync --extra core --extra test --frozen
-uv run --frozen python -m pytest
+uv run python -m pytest
 ```
 
 Optional dependency groups are defined for 3D/evaluation tools, modern matchers,
@@ -91,16 +91,16 @@ See `CONTEXT.md` for the migration glossary and notation conventions.
 Representative migrated examples:
 
 ```bash
-uv run --frozen python examples/ch7_feature_vo/pose_estimation_2d2d.py \
+uv run python examples/ch7_feature_vo/pose_estimation_2d2d.py \
   --image0 data/slambook/ch7/1.png \
   --image1 data/slambook/ch7/2.png \
   --matcher orb
 
-uv run --frozen python examples/ch10_bundle_adjustment/scipy_bal.py \
+uv run python examples/ch10_bundle_adjustment/scipy_bal.py \
   --bal examples/ch10_bundle_adjustment/tiny_bal.txt \
   --fix-cameras
 
-uv run --frozen python examples/ch13_dense_mapping/rgbd_fusion.py \
+uv run python examples/ch13_dense_mapping/rgbd_fusion.py \
   --color-dir data/slambook/ch13/color \
   --depth-dir data/slambook/ch13/depth \
   --pose-file data/slambook/ch13/pose.txt \
@@ -111,11 +111,11 @@ uv run --frozen python examples/ch13_dense_mapping/rgbd_fusion.py \
 Validation and benchmark helpers live under `examples/reference/`:
 
 ```bash
-uv run --frozen python examples/reference/validate_upstream_samples.py \
+uv run python examples/reference/validate_upstream_samples.py \
   --upstream-root data/slambook-upstream \
   --work-dir /tmp/slambook-python-validation
 
-uv run --frozen python examples/reference/benchmark_report.py \
+uv run python examples/reference/benchmark_report.py \
   pose-graph \
   --g2o examples/ch11_pose_graph/tiny_pose_graph.g2o \
   --solve \
@@ -126,14 +126,14 @@ Optional backend integration checks are kept outside the default pytest path:
 
 ```bash
 uv sync --all-extras --frozen
-uv run --frozen python -m pytest tests_optional
+uv run python -m pytest tests_optional
 ```
 
 With a uv mirror:
 
 ```bash
 UV_DEFAULT_INDEX=https://pypi.tuna.tsinghua.edu.cn/simple uv sync --all-extras --frozen
-uv run --frozen python -m pytest tests_optional
+uv run python -m pytest tests_optional
 ```
 
 On macOS, FAISS and PyCOLMAP can load duplicate OpenMP runtimes in the same
@@ -141,7 +141,7 @@ pytest process. If Python aborts while importing optional native backends, run
 the optional suite with:
 
 ```bash
-KMP_DUPLICATE_LIB_OK=TRUE uv run --frozen python -m pytest tests_optional
+KMP_DUPLICATE_LIB_OK=TRUE uv run python -m pytest tests_optional
 ```
 
 ## Legacy Scripts

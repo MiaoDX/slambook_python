@@ -133,13 +133,13 @@ Work:
 Deliverables:
 
 - `uv sync --extra core --frozen` works.
-- `uv run --frozen python -m pytest` runs and passes at least smoke tests.
+- `uv run python -m pytest` runs and passes at least smoke tests.
 - Documentation defines transform names such as `T_wc`, `T_cw`, `T_10`, and `T_01`.
 
 Acceptance criteria:
 
 - No optional backend is required to import `slam`.
-- Fresh checkout can run `uv run --frozen python -m pytest` after the core sync.
+- Fresh checkout can run `uv run python -m pytest` after the core sync.
 - The root scripts still exist and still represent the legacy baseline.
 
 Risk:
@@ -201,7 +201,7 @@ Deliverables:
 
 Acceptance criteria:
 
-- `uv run --frozen python examples/ch7_feature_vo/pose_estimation_2d2d.py --image0 ... --image1 ... --matcher orb` runs.
+- `uv run python examples/ch7_feature_vo/pose_estimation_2d2d.py --image0 ... --image1 ... --matcher orb` runs.
 - The same CLI runs with `--matcher sift` where OpenCV SIFT is available.
 - Tests pass without GPU or optional modern dependencies.
 

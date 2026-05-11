@@ -16,7 +16,8 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python-version }}
-      - name: Install core test dependencies
-        run: python -m pip install -e '.[core,test]'
+      - uses: astral-sh/setup-uv@v5
+      - name: Sync core test dependencies
+        run: uv sync --extra core --extra test --frozen
       - name: Run tests
-        run: python -m pytest
+        run: uv run python -m pytest
