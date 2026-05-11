@@ -8,7 +8,7 @@ Validation uses the repo's `uv` environment plus sample files from upstream
 The upstream sample smoke suite is repeatable with:
 
 ```bash
-uv run --extra core --extra test --frozen python examples/reference/validate_upstream_samples.py \
+uv run --frozen python examples/reference/validate_upstream_samples.py \
   --upstream-root /path/to/gaoxiang12/slambook \
   --work-dir /tmp/slambook-python-validation
 ```
@@ -18,7 +18,7 @@ The command writes `/tmp/slambook-python-validation/upstream_validation_report.j
 ## Core Test Suite
 
 ```bash
-uv run --extra core --extra test --frozen python -m pytest
+uv run --frozen python -m pytest
 ```
 
 Earlier recorded result: `132 passed`.
@@ -26,7 +26,7 @@ Earlier recorded result: `132 passed`.
 Latest local run on 2026-05-10:
 
 ```bash
-uv run --extra core --extra test --frozen python -m pytest
+uv run --frozen python -m pytest
 ```
 
 Result: `139 passed in 4.70s`.
@@ -67,7 +67,7 @@ Quantitative report JSON can be generated for trajectory, BAL, and pose-graph
 examples with `examples/reference/benchmark_report.py`. For example:
 
 ```bash
-uv run --extra core --extra test --frozen python examples/reference/benchmark_report.py \
+uv run --frozen python examples/reference/benchmark_report.py \
   pose-graph \
   --g2o examples/ch11_pose_graph/tiny_pose_graph.g2o \
   --solve \
@@ -91,7 +91,7 @@ The first plain optional test run aborted while importing `pycolmap` after
 wheels on macOS. The suite passed with the documented workaround:
 
 ```bash
-KMP_DUPLICATE_LIB_OK=TRUE UV_DEFAULT_INDEX=https://pypi.tuna.tsinghua.edu.cn/simple uv run --all-extras --frozen python -m pytest tests_optional
+KMP_DUPLICATE_LIB_OK=TRUE uv run --frozen python -m pytest tests_optional
 ```
 
 Result: `8 passed, 3 warnings in 11.89s`.

@@ -1,0 +1,107 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="680" viewBox="0 0 1200 680" role="img" aria-labelledby="title desc">
+  <title id="title">slambook-python architecture overview</title>
+  <desc id="desc">Inputs flow through importable SLAM modules into chapter examples, validation helpers, and visual outputs.</desc>
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#111827"/>
+      <stop offset="0.55" stop-color="#172033"/>
+      <stop offset="1" stop-color="#0f172a"/>
+    </linearGradient>
+    <linearGradient id="core" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#0f766e"/>
+      <stop offset="1" stop-color="#0ea5a5"/>
+    </linearGradient>
+    <linearGradient id="accent" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#f59e0b"/>
+      <stop offset="1" stop-color="#38bdf8"/>
+    </linearGradient>
+    <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="12" stdDeviation="12" flood-color="#020617" flood-opacity="0.35"/>
+    </filter>
+    <marker id="arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#7dd3fc"/>
+    </marker>
+    <style>
+      text { font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
+      .title { fill: #f8fafc; font-size: 34px; font-weight: 700; }
+      .subtitle { fill: #cbd5e1; font-size: 16px; }
+      .section { fill: #e2e8f0; font-size: 18px; font-weight: 700; }
+      .label { fill: #f8fafc; font-size: 15px; font-weight: 650; }
+      .small { fill: #cbd5e1; font-size: 13px; }
+      .tiny { fill: #94a3b8; font-size: 12px; }
+      .card { fill: rgba(15, 23, 42, 0.76); stroke: rgba(148, 163, 184, 0.4); stroke-width: 1.2; rx: 10; filter: url(#shadow); }
+      .module { fill: rgba(15, 118, 110, 0.88); stroke: rgba(153, 246, 228, 0.55); stroke-width: 1; rx: 8; }
+      .example { fill: rgba(245, 158, 11, 0.14); stroke: rgba(245, 158, 11, 0.58); stroke-width: 1.1; rx: 8; }
+      .line { fill: none; stroke: #7dd3fc; stroke-width: 2.3; marker-end: url(#arrow); opacity: 0.78; }
+      .soft-line { fill: none; stroke: #2dd4bf; stroke-width: 1.8; opacity: 0.45; }
+    </style>
+  </defs>
+
+  <rect width="1200" height="680" fill="url(#bg)"/>
+  <circle cx="1040" cy="80" r="180" fill="#0ea5a5" opacity="0.08"/>
+  <circle cx="170" cy="590" r="210" fill="#f59e0b" opacity="0.07"/>
+
+  <text x="70" y="72" class="title">slambook-python architecture</text>
+  <text x="72" y="104" class="subtitle">Teaching-first SLAM examples built from importable NumPy, SciPy, and OpenCV modules.</text>
+
+  <rect x="58" y="150" width="220" height="385" class="card"/>
+  <text x="82" y="190" class="section">Inputs</text>
+  <rect x="82" y="220" width="150" height="46" class="example"/>
+  <text x="100" y="249" class="label">Images</text>
+  <text x="100" y="286" class="tiny">RGB, grayscale</text>
+  <rect x="82" y="310" width="150" height="46" class="example"/>
+  <text x="100" y="339" class="label">Depth</text>
+  <text x="100" y="376" class="tiny">RGB-D, disparity</text>
+  <rect x="82" y="400" width="150" height="46" class="example"/>
+  <text x="100" y="429" class="label">Datasets</text>
+  <text x="100" y="466" class="tiny">slambook, TUM, KITTI</text>
+
+  <rect x="338" y="132" width="405" height="452" class="card"/>
+  <text x="366" y="172" class="section">Importable package: slam/</text>
+  <rect x="366" y="204" width="150" height="54" class="module"/>
+  <text x="388" y="236" class="label">camera</text>
+  <text x="388" y="252" class="small">intrinsics, stereo</text>
+  <rect x="560" y="204" width="150" height="54" class="module"/>
+  <text x="582" y="236" class="label">geometry</text>
+  <text x="582" y="252" class="small">SE3, masks, triangulation</text>
+  <rect x="366" y="286" width="150" height="54" class="module"/>
+  <text x="388" y="318" class="label">features</text>
+  <text x="388" y="334" class="small">ORB, SIFT, learned guards</text>
+  <rect x="560" y="286" width="150" height="54" class="module"/>
+  <text x="582" y="318" class="label">vo</text>
+  <text x="582" y="334" class="small">two-view, PnP, direct</text>
+  <rect x="366" y="368" width="150" height="54" class="module"/>
+  <text x="388" y="400" class="label">optimization</text>
+  <text x="388" y="416" class="small">BA, pose graph</text>
+  <rect x="560" y="368" width="150" height="54" class="module"/>
+  <text x="582" y="400" class="label">mapping</text>
+  <text x="582" y="416" class="small">point clouds, RGB-D</text>
+  <rect x="366" y="450" width="150" height="54" class="module"/>
+  <text x="388" y="482" class="label">io</text>
+  <text x="388" y="498" class="small">datasets, trajectories</text>
+  <rect x="560" y="450" width="150" height="54" class="module"/>
+  <text x="582" y="482" class="label">viz + eval</text>
+  <text x="582" y="498" class="small">plots, metrics</text>
+
+  <rect x="805" y="150" width="318" height="385" class="card"/>
+  <text x="833" y="190" class="section">Outputs</text>
+  <rect x="833" y="220" width="235" height="46" class="example"/>
+  <text x="855" y="249" class="label">Chapter CLIs</text>
+  <text x="855" y="286" class="tiny">examples/ch3 ... examples/ch13</text>
+  <rect x="833" y="310" width="235" height="46" class="example"/>
+  <text x="855" y="339" class="label">Validation reports</text>
+  <text x="855" y="376" class="tiny">pytest, smoke tests, benchmarks</text>
+  <rect x="833" y="400" width="235" height="46" class="example"/>
+  <text x="855" y="429" class="label">Artifacts</text>
+  <text x="855" y="466" class="tiny">PLY, TUM/KITTI, plots, maps</text>
+
+  <path d="M 278 342 C 320 342 322 356 338 356" class="line"/>
+  <path d="M 743 356 C 777 356 778 342 805 342" class="line"/>
+  <path d="M 278 243 C 320 243 322 231 366 231" class="soft-line"/>
+  <path d="M 278 333 C 318 333 326 395 366 395" class="soft-line"/>
+  <path d="M 710 477 C 760 477 780 423 833 423" class="soft-line"/>
+  <path d="M 710 313 C 770 313 780 243 833 243" class="soft-line"/>
+
+  <rect x="368" y="548" width="342" height="26" fill="url(#accent)" opacity="0.18" rx="13"/>
+  <text x="392" y="566" class="tiny">Core path stays lightweight; optional backends remain behind extras.</text>
+</svg>

@@ -624,11 +624,11 @@ Mitigation:
 - Use optional extras:
 
 ```text
-pip install -e .[core]
-pip install -e .[3d]
-pip install -e .[modern]
-pip install -e .[backend]
-pip install -e .[all]
+uv sync --extra core --frozen
+uv sync --extra 3d --frozen
+uv sync --extra modern --frozen
+uv sync --extra backend --frozen
+uv sync --all-extras --frozen
 ```
 
 ### Risk: Coordinate-frame confusion

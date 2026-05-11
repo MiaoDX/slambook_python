@@ -3,7 +3,7 @@
 Fuse one RGB-D frame:
 
 ```bash
-python examples/ch13_dense_mapping/rgbd_fusion.py \
+uv run --frozen python examples/ch13_dense_mapping/rgbd_fusion.py \
   --color data/slambook/ch13/color/1.png \
   --depth data/slambook/ch13/depth/1.pgm \
   --intrinsics FX FY CX CY \
@@ -14,7 +14,7 @@ python examples/ch13_dense_mapping/rgbd_fusion.py \
 Fuse a known-pose RGB-D sequence and export an occupancy grid:
 
 ```bash
-python examples/ch13_dense_mapping/rgbd_fusion.py \
+uv run --frozen python examples/ch13_dense_mapping/rgbd_fusion.py \
   --color-dir data/slambook/ch13/color \
   --depth-dir data/slambook/ch13/depth \
   --pose-file data/slambook/ch13/pose.txt \
@@ -27,7 +27,7 @@ python examples/ch13_dense_mapping/rgbd_fusion.py \
 Estimate a known-pose monocular depth map from a reference/current pair:
 
 ```bash
-python examples/ch13_dense_mapping/monocular_depth.py \
+uv run --frozen python examples/ch13_dense_mapping/monocular_depth.py \
   --reference data/remode/images/000000.png \
   --current data/remode/images/000001.png \
   --transform-cur-ref 1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 \

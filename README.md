@@ -1,5 +1,9 @@
+# slambook-python
+
 Python implementations of selected projects and examples from
 [slambook](https://github.com/gaoxiang12/slambook).
+
+![Python SLAM learning hero](docs/assets/slambook-python-hero.png)
 
 This repository contains a teaching-first Python package for the core slambook
 concepts. The legacy root scripts remain in place while the migrated importable
@@ -12,14 +16,14 @@ the core environment and the chapters that need no large datasets:
 
 ```bash
 uv sync --extra core --extra test --frozen
-uv run --extra core --extra test --frozen python -m pytest
-uv run --extra core --extra test --frozen python examples/ch3_geometry/transforms.py
-uv run --extra core --extra test --frozen python examples/ch4_lie/exp_log.py
-uv run --extra core --extra test --frozen python examples/ch6_optimization/curve_fitting.py
-uv run --extra core --extra test --frozen python examples/ch10_bundle_adjustment/scipy_bal.py \
+uv run --frozen python -m pytest
+uv run --frozen python examples/ch3_geometry/transforms.py
+uv run --frozen python examples/ch4_lie/exp_log.py
+uv run --frozen python examples/ch6_optimization/curve_fitting.py
+uv run --frozen python examples/ch10_bundle_adjustment/scipy_bal.py \
   --bal examples/ch10_bundle_adjustment/tiny_bal.txt \
   --fix-cameras
-uv run --extra core --extra test --frozen python examples/ch11_pose_graph/optimize_pose_graph.py \
+uv run --frozen python examples/ch11_pose_graph/optimize_pose_graph.py \
   --g2o examples/ch11_pose_graph/tiny_pose_graph.g2o
 ```
 
@@ -28,74 +32,75 @@ camera, visual odometry, loop closure, and dense mapping examples listed below.
 Large datasets are intentionally not committed; see `docs/datasets.md` for the
 expected layouts.
 
-For mainland China, use the same commands with a uv mirror:
+For mainland China, sync the same environment with a uv mirror:
 
 ```bash
 UV_DEFAULT_INDEX=https://pypi.tuna.tsinghua.edu.cn/simple uv sync --extra core --extra test --frozen
-UV_DEFAULT_INDEX=https://pypi.tuna.tsinghua.edu.cn/simple uv run --extra core --extra test --frozen python -m pytest
+uv run --frozen python -m pytest
 ```
 
 ## Install
 
+This repo documents the `uv` workflow only. Sync once for the dependency group
+you need, then use `uv run --frozen ...` for normal commands.
+
 Core educational dependencies:
 
 ```bash
-pip install -e .[core]
+uv sync --extra core --frozen
 ```
 
 Core dependencies plus tests:
 
 ```bash
-pip install -e .[core,test]
-python -m pytest
-```
-
-With `uv`, use the declared extras directly:
-
-```bash
-uv sync --extra core --extra test
-uv run --extra core --extra test python -m pytest
+uv sync --extra core --extra test --frozen
+uv run --frozen python -m pytest
 ```
 
 In mainland China, a PyPI mirror can be used with the checked-in lockfile:
 
 ```bash
 UV_DEFAULT_INDEX=https://pypi.tuna.tsinghua.edu.cn/simple uv sync --extra core --extra test --frozen
-UV_DEFAULT_INDEX=https://pypi.tuna.tsinghua.edu.cn/simple uv run --extra core --extra test --frozen python -m pytest
+uv run --frozen python -m pytest
 ```
 
 Optional dependency groups are defined for 3D/evaluation tools, modern matchers,
 and reference backends:
 
 ```bash
-pip install -e .[3d]
-pip install -e .[modern]
-pip install -e .[backend]
-pip install -e .[all]
+uv sync --extra 3d --frozen
+uv sync --extra modern --frozen
+uv sync --extra backend --frozen
+uv sync --all-extras --frozen
 ```
 
 Importing `slam` does not require optional modern backends.
+
+## Architecture
+
+![Architecture overview](docs/assets/slambook-python-architecture.svg)
 
 ## Migration Status
 
 See `docs/status.md` for the chapter-by-chapter status table.
 See `docs/datasets.md` for expected local dataset layouts.
 See `docs/validation.md` for the latest local validation notes.
+See `docs/notes.md` for organized notes from the legacy scripts.
 See `CONTEXT.md` for the migration glossary and notation conventions.
 
 Representative migrated examples:
 
 ```bash
-python examples/ch7_feature_vo/pose_estimation_2d2d.py \
+uv run --frozen python examples/ch7_feature_vo/pose_estimation_2d2d.py \
   --image0 data/slambook/ch7/1.png \
   --image1 data/slambook/ch7/2.png \
   --matcher orb
 
-python examples/ch10_bundle_adjustment/scipy_bal.py \
+uv run --frozen python examples/ch10_bundle_adjustment/scipy_bal.py \
   --bal examples/ch10_bundle_adjustment/tiny_bal.txt \
   --fix-cameras
 
-python examples/ch13_dense_mapping/rgbd_fusion.py \
+uv run --frozen python examples/ch13_dense_mapping/rgbd_fusion.py \
   --color-dir data/slambook/ch13/color \
   --depth-dir data/slambook/ch13/depth \
   --pose-file data/slambook/ch13/pose.txt \
@@ -106,11 +111,11 @@ python examples/ch13_dense_mapping/rgbd_fusion.py \
 Validation and benchmark helpers live under `examples/reference/`:
 
 ```bash
-uv run --extra core --extra test --frozen python examples/reference/validate_upstream_samples.py \
+uv run --frozen python examples/reference/validate_upstream_samples.py \
   --upstream-root data/slambook-upstream \
   --work-dir /tmp/slambook-python-validation
 
-uv run --extra core --extra test --frozen python examples/reference/benchmark_report.py \
+uv run --frozen python examples/reference/benchmark_report.py \
   pose-graph \
   --g2o examples/ch11_pose_graph/tiny_pose_graph.g2o \
   --solve \
@@ -121,14 +126,14 @@ Optional backend integration checks are kept outside the default pytest path:
 
 ```bash
 uv sync --all-extras --frozen
-uv run --all-extras --frozen python -m pytest tests_optional
+uv run --frozen python -m pytest tests_optional
 ```
 
 With a uv mirror:
 
 ```bash
 UV_DEFAULT_INDEX=https://pypi.tuna.tsinghua.edu.cn/simple uv sync --all-extras --frozen
-UV_DEFAULT_INDEX=https://pypi.tuna.tsinghua.edu.cn/simple uv run --all-extras --frozen python -m pytest tests_optional
+uv run --frozen python -m pytest tests_optional
 ```
 
 On macOS, FAISS and PyCOLMAP can load duplicate OpenMP runtimes in the same
@@ -136,7 +141,7 @@ pytest process. If Python aborts while importing optional native backends, run
 the optional suite with:
 
 ```bash
-KMP_DUPLICATE_LIB_OK=TRUE UV_DEFAULT_INDEX=https://pypi.tuna.tsinghua.edu.cn/simple uv run --all-extras --frozen python -m pytest tests_optional
+KMP_DUPLICATE_LIB_OK=TRUE uv run --frozen python -m pytest tests_optional
 ```
 
 ## Legacy Scripts
@@ -154,61 +159,3 @@ baseline during the migration:
 
 New code should use importable modules under `slam/` and runnable examples under
 `examples/`.
-
-
-## SOME NOTES:
-
-* image color and corresponding difference, `im1 = cv2.imread(im1_file)` and `im1 = cv2.imread(im1_file, 0)`. Or the color space (RGB, BGR) and the consequences.
-
-* inner points in findFundamentalMat, when it is not the same as the input num?
-
-* when we calc Fundamental Matrix
-
-`pts1 = np.int32(pts1)` and `pts1 = np.array(pts1)` will lead to very different answers, so, which is better??
-
-Use `np.array(pts1)` or `np.float32(pts1)`
-
-
-* Matrix manipulation in C++ and python
-
-[Opencv中Mat矩阵相乘——点乘、dot、mul运算详解](http://blog.csdn.net/dcrmg/article/details/52404580
-
-```        
-    arr = [[1,2,3],[4,5,6]]
-    a = np.array(arr)
-    b = np.array(arr)
-    
-    C++     python
-    *       dot
-    a*b.t()     a.dot(b.T) or np.dot(a,b.T)
-    
-    dot     * -> sum
-    a.dot(b)    (a*b).sum()
-    
-    mul     *
-    a.mul(b)    a*b
-    
-    So, C++: E = K2.t () * F * K1;
-    python:  E = K2.T.dot(F).dot(K1)
-```
-
-* The corresponding relationship between F,E and H
-
-* [recoverPose](http://docs.opencv.org/3.2.0/d9/d0c/group__calib3d.html)
-
-``` vi
-    This function decomposes an essential matrix using decomposeEssentialMat and then verifies possible pose hypotheses by doing cheirality check. The cheirality check basically means that the triangulated 3D points should have positive depth. Some details can be found in [119] .
-```
-
-* check_solutions(fp, sp, K, R1, R2, t):
-    should have same result as recoverPose, but without good luck    
-    
-* some notes online
-  
-    - [import cv2 #Notes](https://pythonpath.wordpress.com/import-cv2/)
-    
-* The usage of 3xN and Nx3
-
-* findFundamentalMat, findEssentialMat all have `mask` return value and means `inner points`, we should take care of them
-
-* [相机位姿求解问题？](https://www.zhihu.com/question/51510464)

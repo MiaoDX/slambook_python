@@ -40,7 +40,7 @@ data/
 Run it with explicit intrinsics and optional trajectory outputs:
 
 ```bash
-python examples/ch9_project/run_vo.py \
+uv run --frozen python examples/ch9_project/run_vo.py \
   --images data/slambook/ch9/images \
   --intrinsics FX FY CX CY \
   --output-tum outputs/ch9.tum \
@@ -50,7 +50,7 @@ python examples/ch9_project/run_vo.py \
 For the depth-assisted local-map runner, provide a matching depth directory:
 
 ```bash
-python examples/ch9_project/run_local_map_vo.py \
+uv run --frozen python examples/ch9_project/run_local_map_vo.py \
   --images data/slambook/ch9/images \
   --depths data/slambook/ch9/depth \
   --intrinsics FX FY CX CY \
@@ -72,7 +72,7 @@ tx ty tz qx qy qz qw
 Run the known-pose fusion path with:
 
 ```bash
-python examples/ch13_dense_mapping/rgbd_fusion.py \
+uv run --frozen python examples/ch13_dense_mapping/rgbd_fusion.py \
   --color-dir data/slambook/ch13/color \
   --depth-dir data/slambook/ch13/depth \
   --pose-file data/slambook/ch13/pose.txt \

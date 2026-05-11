@@ -52,11 +52,11 @@ jaxlie
 Packaging target:
 
 ```text
-pip install -e .[core]
-pip install -e .[3d]
-pip install -e .[modern]
-pip install -e .[backend]
-pip install -e .[all]
+uv sync --extra core --frozen
+uv sync --extra 3d --frozen
+uv sync --extra modern --frozen
+uv sync --extra backend --frozen
+uv sync --all-extras --frozen
 ```
 
 ## Target Repository Shape
@@ -132,14 +132,14 @@ Work:
 
 Deliverables:
 
-- `pip install -e .[core]` works.
-- `pytest` runs and passes at least smoke tests.
+- `uv sync --extra core --frozen` works.
+- `uv run --frozen python -m pytest` runs and passes at least smoke tests.
 - Documentation defines transform names such as `T_wc`, `T_cw`, `T_10`, and `T_01`.
 
 Acceptance criteria:
 
 - No optional backend is required to import `slam`.
-- Fresh checkout can run `python -m pytest`.
+- Fresh checkout can run `uv run --frozen python -m pytest` after the core sync.
 - The root scripts still exist and still represent the legacy baseline.
 
 Risk:
@@ -201,7 +201,7 @@ Deliverables:
 
 Acceptance criteria:
 
-- `python examples/ch7_feature_vo/pose_estimation_2d2d.py --image0 ... --image1 ... --matcher orb` runs.
+- `uv run --frozen python examples/ch7_feature_vo/pose_estimation_2d2d.py --image0 ... --image1 ... --matcher orb` runs.
 - The same CLI runs with `--matcher sift` where OpenCV SIFT is available.
 - Tests pass without GPU or optional modern dependencies.
 
@@ -719,7 +719,7 @@ Avoid one large "port slambook" commit. Each commit should leave examples and te
 ## Open Decisions
 
 1. Python version floor: recommend Python 3.10+ because evo currently requires Python 3.10+.
-2. Package manager: standard `pip` + `pyproject.toml` is enough at first.
+2. Package manager: `uv` with `pyproject.toml` and the checked-in lockfile.
 3. Dataset priority: choose between using slambook sample data first or adding KITTI/TUM support early.
 4. License note: upstream slambook is MIT; evo is GPLv3, so keep evo usage as an optional tool unless GPL implications are acceptable for downstream distribution.
 5. Exact coordinate convention: decide and document before porting VO internals.

@@ -5,7 +5,7 @@ This directory contains command-line replacements for the legacy root scripts.
 ## 2D-2D Pose Estimation
 
 ```bash
-python examples/ch7_feature_vo/pose_estimation_2d2d.py \
+uv run --frozen python examples/ch7_feature_vo/pose_estimation_2d2d.py \
   --image0 data/slambook/ch7/1.png \
   --image1 data/slambook/ch7/2.png \
   --matcher orb
@@ -14,7 +14,7 @@ python examples/ch7_feature_vo/pose_estimation_2d2d.py \
 Use explicit intrinsics when they are known:
 
 ```bash
-python examples/ch7_feature_vo/pose_estimation_2d2d.py \
+uv run --frozen python examples/ch7_feature_vo/pose_estimation_2d2d.py \
   --image0 data/slambook/ch7/1.png \
   --image1 data/slambook/ch7/2.png \
   --matcher sift \
@@ -28,7 +28,7 @@ fallback should not be treated as calibrated results.
 ## Triangulation
 
 ```bash
-python examples/ch7_feature_vo/triangulation.py \
+uv run --frozen python examples/ch7_feature_vo/triangulation.py \
   --image0 data/slambook/ch7/1.png \
   --image1 data/slambook/ch7/2.png \
   --matcher orb \
@@ -39,7 +39,7 @@ python examples/ch7_feature_vo/triangulation.py \
 ## Matcher Comparison
 
 ```bash
-python examples/ch7_feature_vo/compare_matchers.py \
+uv run --frozen python examples/ch7_feature_vo/compare_matchers.py \
   --image0 data/slambook/ch7/1.png \
   --image1 data/slambook/ch7/2.png \
   --matchers orb sift lightglue loftr
@@ -56,7 +56,7 @@ matched pixels into camera-frame 3D points, then estimates the pose of the
 second image with PnP.
 
 ```bash
-python examples/ch7_feature_vo/pose_estimation_3d2d.py \
+uv run --frozen python examples/ch7_feature_vo/pose_estimation_3d2d.py \
   --image0 data/slambook/ch7/1.png \
   --image1 data/slambook/ch7/2.png \
   --depth0 data/slambook/ch7/1_depth.png \
@@ -72,7 +72,7 @@ into paired 3D camera-frame points, then estimates `T_10` with SVD rigid
 registration.
 
 ```bash
-python examples/ch7_feature_vo/pose_estimation_3d3d.py \
+uv run --frozen python examples/ch7_feature_vo/pose_estimation_3d3d.py \
   --image0 data/slambook/ch7/1.png \
   --image1 data/slambook/ch7/2.png \
   --depth0 data/slambook/ch7/1_depth.png \
